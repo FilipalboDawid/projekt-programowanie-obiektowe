@@ -68,10 +68,12 @@ class RobotArm:
         dir2 = apply_rotation(dir2, rot_yaw)
         joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
 
-        rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 4, rl.GRAY)  # Rysowanie ramienia 1
-        rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 4, rl.GRAY)
-        rl.draw_sphere(joint1, 0.1, rl.RED)  # Rysowanie stawów
+        rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 10, rl.GRAY)  # Rysowanie ramienia 1
+        rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
+        rl.draw_sphere(joint1, 0.1, rl.DARKGRAY)  # Rysowanie stawów
+        rl.draw_sphere(base, 0.1, rl.DARKGRAY)
         rl.draw_cube(joint2, 0.2, 0.2, 0.2, rl.BLACK)  # Rysowanie końcówki ramienia
+        rl.draw_cylinder_ex([0,0,0], base, 0.5, 0.5, 20, rl.DARKGRAY)  # Rysowanie podstawy
 
         if self.grabbing and self.grabbed_object:
             self.grabbed_object.position = joint2
