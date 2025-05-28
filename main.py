@@ -95,6 +95,7 @@ while not rl.window_should_close():
             if distance_vec3(end_pos, obj_pos) < primitive.radius:
                 robot.grasp(primitive)
             else:
+                robot.grasp(None)
                 print("Za daleko od obiektu, nie można chwycić.")
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()

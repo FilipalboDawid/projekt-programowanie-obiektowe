@@ -70,11 +70,14 @@ class RobotArm:
 
         rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 10, rl.GRAY)  # Rysowanie ramienia 1
         rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
-        rl.draw_sphere(joint1, 0.1, rl.DARKGRAY)  # Rysowanie stawów
-        rl.draw_sphere(base, 0.1, rl.DARKGRAY)
-        rl.draw_cube(joint2, 0.2, 0.2, 0.2, rl.BLACK)  # Rysowanie końcówki ramienia
+        rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)  # Rysowanie stawów
+        rl.draw_sphere(base, 0.2, rl.DARKGRAY)
         rl.draw_cylinder_ex([0,0,0], base, 0.5, 0.5, 20, rl.DARKGRAY)  # Rysowanie podstawy
-
+        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
+        if self.grabbing:
+            rl.draw_cube(joint2, 0.3, 0.3, 0.3, rl.DARKGRAY)  # Rysowanie chwytu
+        else:
+            rl.draw_cube(joint2, 0.2, 0.2, 0.2, rl.BLACK)
         if self.grabbing and self.grabbed_object:
             self.grabbed_object.position = joint2
 

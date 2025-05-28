@@ -16,3 +16,4 @@ class SequenceManager:
             self.play_index = 0
         self.robot.joint_angles = copy.deepcopy(self.frames[self.play_index])
         self.play_index += 1
+        
