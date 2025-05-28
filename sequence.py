@@ -10,8 +10,8 @@ class SequenceManager:
         self.frames.append({
         'angles': copy.deepcopy(self.robot.joint_angles),
         'grabbing': self.robot.grabbing,
-        'grabbed_object': self.robot.grabbed_object  # tu tylko referencja, nie deep copy!
-    })
+        'grabbed_object': self.robot.grabbed_object
+        })
     def playback(self):
         if not self.frames:
             return

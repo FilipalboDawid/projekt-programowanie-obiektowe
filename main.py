@@ -3,6 +3,7 @@ from robot import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
 import math
+import numpy as np
 
 WIDTH, HEIGHT = 1600, 900
 
@@ -93,23 +94,26 @@ while not rl.window_should_close():
             obj_pos = primitive.position
 
             if distance_vec3(end_pos, obj_pos) < primitive.radius:
-                robot.grasp(primitive)
+                if robot.grabbing == False:
+                    robot.grasp(primitive)
+                else:
+                    print("Chwytak jest zamknięty, nie można chwycić.")
             else:
                 robot.grasp(None)
                 print("Za daleko od obiektu, nie można chwycić.")
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
-        if rl.is_key_down(rl.KEY_W):
+        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.9 * (math.pi / 4):
             robot.joint_angles[0] += 0.01
-        if rl.is_key_down(rl.KEY_S):
+        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.9 * (math.pi / 4):
             robot.joint_angles[0] -= 0.01
-        if rl.is_key_down(rl.KEY_A):
+        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9 * math.pi / 2:
             robot.joint_angles[1] += 0.01
-        if rl.is_key_down(rl.KEY_D):
+        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > -0.9 * math.pi / 2:
             robot.joint_angles[1] -= 0.01
-        if rl.is_key_down(rl.KEY_UP):
+        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < math.pi / 2:
             robot.joint_angles[2] += 0.01
-        if rl.is_key_down(rl.KEY_DOWN):
+        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -math.pi / 2:
             robot.joint_angles[2] -= 0.01
     elif mode == 'play':
         seq_manager.playback()
@@ -124,7 +128,12 @@ while not rl.window_should_close():
     rl.draw_grid(10, 1.0)
     rl.end_mode3d()
     
+    degrees = np.degrees(robot.joint_angles)
+
     rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release", 10, 10, 20, rl.DARKGRAY)
+    rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
+    rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
+    rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()
