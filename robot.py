@@ -1,4 +1,5 @@
 import raylibpy as rl
+import numpy as np
 import math
 
 # Pomocnicze funkcje wektorowe
@@ -37,14 +38,14 @@ def apply_rotation(vec, mat):
 
 class RobotArm:
     def __init__(self):
-        self.joint_angles = [0.0, 0.0, 0.0]  # shoulder_pitch, shoulder_yaw, elbow
+        self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
         self.segment_length = 2.0
         self.grabbing = False
         self.grabbed_object = None
 
     def handle_input(self):
-        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.9*(math.pi / 4): self.joint_angles[0] += 0.01  # Shoulder Pitch (X)
-        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.9*(math.pi / 4): self.joint_angles[0] -= 0.01
+        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(math.pi / 4): self.joint_angles[0] += 0.01  # Shoulder Pitch (X)
+        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(math.pi / 4): self.joint_angles[0] -= 0.01
         if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < 0.9* math.pi: self.joint_angles[1] += 0.01  # Shoulder Yaw (Y)
         if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * math.pi: self.joint_angles[1] -= 0.01
         if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (math.pi/8): self.joint_angles[2] += 0.01  # Elbow (X)
