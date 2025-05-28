@@ -15,7 +15,7 @@ rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
 rl.set_target_fps(60)
 
 camera = rl.Camera3D()
-camera.position = rl.Vector3(5.0, 5.0, 5.0)
+camera.position = rl.Vector3(-5.0, 6.0, -5.0)
 camera.target = rl.Vector3(0.0, 0.0, 0.0)
 camera.up = rl.Vector3(0.0, 1.0, 0.0)
 camera.fovy = 45.0
@@ -103,17 +103,17 @@ while not rl.window_should_close():
                 print("Za daleko od obiektu, nie można chwycić.")
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
-        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.9 * (math.pi / 4):
+        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.8*(math.pi / 4):
             robot.joint_angles[0] += 0.01
-        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.9 * (math.pi / 4):
+        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.95*(math.pi / 4) and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[0] -= 0.01
-        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9 * math.pi / 2:
+        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9* math.pi:
             robot.joint_angles[1] += 0.01
-        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > -0.9 * math.pi / 2:
+        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > - 0.9 * math.pi:
             robot.joint_angles[1] -= 0.01
-        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < math.pi / 2:
+        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < 0.8 * (math.pi/8):
             robot.joint_angles[2] += 0.01
-        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -math.pi / 2:
+        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * math.pi and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[2] -= 0.01
     elif mode == 'play':
         seq_manager.playback()
@@ -134,6 +134,7 @@ while not rl.window_should_close():
     rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
+    rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 130, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()

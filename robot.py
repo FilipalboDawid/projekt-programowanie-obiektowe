@@ -45,11 +45,11 @@ class RobotArm:
 
     def handle_input(self):
         if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(math.pi / 4): self.joint_angles[0] += 0.01  # Shoulder Pitch (X)
-        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(math.pi / 4): self.joint_angles[0] -= 0.01
+        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(math.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.01
         if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < 0.9* math.pi: self.joint_angles[1] += 0.01  # Shoulder Yaw (Y)
         if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * math.pi: self.joint_angles[1] -= 0.01
         if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (math.pi/8): self.joint_angles[2] += 0.01  # Elbow (X)
-        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * math.pi: self.joint_angles[2] -= 0.01
+        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * math.pi and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] -= 0.01
 
     def draw(self):
         base = rl.Vector3(0, 0.5, 0)
