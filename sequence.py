@@ -1,8 +1,9 @@
 import copy
 
 class SequenceManager:
-    def __init__(self, robot):
+    def __init__(self, robot, primitive):
         self.robot = robot
+        self.primitive = primitive
         self.frames = []
         self.play_index = 0
 
@@ -10,7 +11,8 @@ class SequenceManager:
         self.frames.append({
         'angles': copy.deepcopy(self.robot.joint_angles),
         'grabbing': self.robot.grabbing,
-        'grabbed_object': self.robot.grabbed_object
+        'grabbed_object': self.robot.grabbed_object,
+        'primitive_position': copy.deepcopy(self.primitive.position)
         })
     def playback(self):
         if not self.frames:
@@ -22,6 +24,7 @@ class SequenceManager:
         self.robot.joint_angles = copy.deepcopy(frame['angles'])
         self.robot.grabbing = frame['grabbing']
         self.robot.grabbed_object = frame['grabbed_object']
+        self.primitive.position = copy.deepcopy(frame['primitive_position'])
         self.play_index += 1
 
         if self.robot.grabbing and self.robot.grabbed_object:

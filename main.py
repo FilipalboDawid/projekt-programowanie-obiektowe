@@ -29,7 +29,7 @@ def distance_vec3(a, b):
 
 robot = RobotArm()
 primitive = Primitive()
-seq_manager = SequenceManager(robot)
+seq_manager = SequenceManager(robot, primitive)
 
 mode = 'teach'
 
