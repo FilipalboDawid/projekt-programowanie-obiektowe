@@ -2,7 +2,6 @@ import raylibpy as rl
 from robot import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
-import math
 import numpy as np
 
 WIDTH, HEIGHT = 1600, 900
@@ -55,12 +54,12 @@ while not rl.window_should_close():
     if rl.is_mouse_button_down(rl.MOUSE_BUTTON_LEFT) and rl.is_cursor_on_screen():
         yaw += mouse_delta.x * sensitivity
         pitch -= mouse_delta.y * sensitivity
-        pitch = max(-math.pi/2 + 0.1, min(math.pi/2 - 0.1, pitch))
+        pitch = max(-np.pi/2 + 0.1, min(np.pi/2 - 0.1, pitch))
 
         # Oblicz pozycję kamery względem celu
-        camera.position.x = camera.target.x + radius * math.cos(pitch) * math.sin(yaw)
-        camera.position.y = camera.target.y + radius * math.sin(pitch)
-        camera.position.z = camera.target.z + radius * math.cos(pitch) * math.cos(yaw)
+        camera.position.x = camera.target.x + radius * np.cos(pitch) * np.sin(yaw)
+        camera.position.y = camera.target.y + radius * np.sin(pitch)
+        camera.position.z = camera.target.z + radius * np.cos(pitch) * np.cos(yaw)
 
     # Przesuwanie kamery LPM
     if rl.is_mouse_button_down(rl.MOUSE_BUTTON_RIGHT) and rl.is_cursor_on_screen():
@@ -103,17 +102,17 @@ while not rl.window_should_close():
                 print("Za daleko od obiektu, nie można chwycić.")
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
-        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.8*(math.pi / 4):
+        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.8*(np.pi / 4):
             robot.joint_angles[0] += 0.01
-        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.95*(math.pi / 4) and robot.get_end_effector_pos().y > 0.1:
+        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.95*(np.pi / 4) and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[0] -= 0.01
-        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9* math.pi:
+        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9* np.pi:
             robot.joint_angles[1] += 0.01
-        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > - 0.9 * math.pi:
+        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > - 0.9 * np.pi:
             robot.joint_angles[1] -= 0.01
-        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < 0.8 * (math.pi/8):
+        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < 0.8 * (np.pi/8):
             robot.joint_angles[2] += 0.01
-        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * math.pi and robot.get_end_effector_pos().y > 0.1:
+        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * np.pi and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[2] -= 0.01
     elif mode == 'play':
         seq_manager.playback()
