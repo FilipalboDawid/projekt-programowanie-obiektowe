@@ -1,5 +1,5 @@
 import raylibpy as rl
-from robot import RobotArm
+from robot2 import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
 import math
