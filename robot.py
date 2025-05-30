@@ -2,6 +2,7 @@
 
 import raylibpy as rl
 import numpy as np
+import math
 
 # Pomocnicze funkcje wektorowe
 def vec3_add(v1, v2):
@@ -30,6 +31,22 @@ def rotation_z(angle):
         [np.sin(angle), np.cos(angle), 0],
         [0, 0, 1]
     ]
+def calculate_shading(light_direction, normal):
+    """
+    Oblicza kolor na podstawie kąta między kierunkiem światła a normalną powierzchni.
+    :param light_direction: Kierunek światła (Vector3).
+    :param normal: Normalna powierzchni (Vector3).
+    :return: Kolor (Color).
+    """
+    light_dir_normalized = rl.vector3_normalize(light_direction)
+    normal_normalized = rl.vector3_normalize(normal)
+    dot_product = rl.vector3_dot_product(light_dir_normalized, normal_normalized)
+
+    # Im większy dot_product, tym jaśniejszy kolor
+    intensity = max(0, dot_product)  # Upewnij się, że wartość jest w zakresie [0, 1]
+    base_color = rl.GRAY
+    shaded_color = rl.color_from_normalized(intensity * rl.color_to_normalized(base_color))
+    return shaded_color
 
 def apply_rotation(vec, mat):
     x = vec.x * mat[0][0] + vec.y * mat[0][1] + vec.z * mat[0][2]
@@ -43,6 +60,64 @@ class RobotArm:
         self.segment_length = 2.0
         self.grabbing = False
         self.grabbed_object = None
+    
+    
+    def move_to_position(self, target_position):
+        """
+        Przemieszcza ramię robota do określonej pozycji.
+        :param target_position: Wektor docelowej pozycji (Vector3).
+        """
+        x, y, z = target_position.x, target_position.y, target_position.z
+
+        # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
+        distance = math.sqrt(x**2 + z**2)
+
+        # Sprawdź, czy cel jest osiągalny
+        if distance > 2 * self.segment_length or y < 0:
+            print("Cel poza zasięgiem robota!")
+            return False
+
+        # Oblicz kąty stawów
+        shoulder_yaw = math.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
+        shoulder_pitch = math.atan2(y, distance)  # Kąt podniesienia ramienia
+        elbow_angle = -math.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
+
+        # Zaktualizuj kąty stawów
+        self.joint_angles[0] = shoulder_pitch
+        self.joint_angles[1] = shoulder_yaw
+        self.joint_angles[2] = elbow_angle
+
+        print(f"Robot przemieścił się do pozycji: {target_position}")
+        return True
+    
+    def move_to_position_smooth(self, target_position, step=0.01):
+        """
+        Przemieszcza ramię robota stopniowo do określonej pozycji.
+        :param target_position: Wektor docelowej pozycji (Vector3).
+        :param step: Wielkość kroku przesunięcia.
+        """
+        x, y, z = target_position.x, target_position.y, target_position.z
+
+        # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
+        distance = math.sqrt(x**2 + z**2)
+
+        # Sprawdź, czy cel jest osiągalny
+        if distance > 2 * self.segment_length or y < 0:
+            print("Cel poza zasięgiem robota!")
+            return False
+
+        # Oblicz docelowe kąty stawów
+        shoulder_yaw = math.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
+        shoulder_pitch = math.atan2(y, distance)  # Kąt podniesienia ramienia
+        elbow_angle = -math.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
+
+        # Stopniowe przesuwanie kątów
+        self.joint_angles[0] += step * (shoulder_pitch - self.joint_angles[0])
+        self.joint_angles[1] += step * (shoulder_yaw - self.joint_angles[1])
+        self.joint_angles[2] += step * (elbow_angle - self.joint_angles[2])
+
+        return True
+    
     def draw_shadow(self, light_direction):
         """
         Rysuje cień ramienia robota na płaszczyźnie na podstawie kierunku światła.

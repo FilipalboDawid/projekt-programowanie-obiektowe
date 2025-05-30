@@ -8,6 +8,8 @@ import numpy as np
 
 WIDTH, HEIGHT = 1600, 900
 
+
+
 yaw = 0.0
 pitch = 0.0
 radius = 5.0
@@ -116,6 +118,12 @@ while not rl.window_should_close():
             robot.joint_angles[2] += 0.01
         if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * np.pi and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[2] -= 0.01
+        if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
+            target_x = float(input("Enter X coordinate: "))
+            target_y = float(input("Enter Y coordinate: "))
+            target_z = float(input("Enter Z coordinate: "))
+            target_position = rl.Vector3(target_x, target_y, target_z)
+            robot.move_to_position(target_position)
     elif mode == 'play':
         seq_manager.playback()
 
@@ -143,7 +151,7 @@ while not rl.window_should_close():
     
     degrees = np.degrees(robot.joint_angles)
 
-    rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release", 10, 10, 20, rl.DARKGRAY)
+    rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
     rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
