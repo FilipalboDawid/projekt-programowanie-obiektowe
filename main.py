@@ -116,6 +116,14 @@ while not rl.window_should_close():
             robot.joint_angles[2] += 0.01
         if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * np.pi and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[2] -= 0.01
+        if rl.is_key_down(rl.KEY_Y):
+            robot.segment_length_shoulder += 0.01
+        if rl.is_key_down(rl.KEY_H) and robot.segment_length_shoulder > 0.1:
+            robot.segment_length_shoulder -= 0.01
+        if rl.is_key_down(rl.KEY_U):
+            robot.segment_length_elbow += 0.01
+        if rl.is_key_down(rl.KEY_J) and robot.segment_length_elbow > 0.1:
+            robot.segment_length_elbow -= 0.01
     elif mode == 'play':
         seq_manager.playback()
 
@@ -136,6 +144,9 @@ while not rl.window_should_close():
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
     rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 130, 20, rl.DARKGRAY)
+    rl.draw_text(f"Segment Lengths: Shoulder: {robot.segment_length_shoulder:.2f}, Elbow: {robot.segment_length_elbow:.2f}", 10, 160, 20, rl.DARKGRAY)
+    if robot.grabbing and robot.grabbed_object:
+        rl.draw_text(f"Grabbed Object Position: {robot.grabbed_object.position}", 10, 190, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()

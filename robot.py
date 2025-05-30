@@ -1,4 +1,4 @@
-#roboty.py
+#robot.py
 
 import raylibpy as rl
 import numpy as np
@@ -40,7 +40,8 @@ def apply_rotation(vec, mat):
 class RobotArm:
     def __init__(self):
         self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
-        self.segment_length = 2.0
+        self.segment_length_elbow = 2.0
+        self.segment_length_shoulder = 2.0
         self.grabbing = False
         self.grabbed_object = None
 
@@ -61,14 +62,14 @@ class RobotArm:
         rot_yaw = rotation_y(self.joint_angles[1])
         dir1 = apply_rotation(up, rot_pitch)
         dir1 = apply_rotation(dir1, rot_yaw)
-        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length))
+        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length_shoulder))
 
         # Ramię 2: Elbow
         rot_elbow = rotation_x(self.joint_angles[2])
         dir2 = apply_rotation(up, rot_elbow)
         dir2 = apply_rotation(dir2, rot_pitch)
         dir2 = apply_rotation(dir2, rot_yaw)
-        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
+        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length_elbow))
 
         rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 10, rl.GRAY)  # Rysowanie ramienia 1
         rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
@@ -93,13 +94,13 @@ class RobotArm:
         rot_yaw = rotation_y(self.joint_angles[1])
         dir1 = apply_rotation(up, rot_pitch)
         dir1 = apply_rotation(dir1, rot_yaw)
-        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length))
+        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length_shoulder))
 
         rot_elbow = rotation_x(self.joint_angles[2])
         dir2 = apply_rotation(up, rot_elbow)
         dir2 = apply_rotation(dir2, rot_pitch)
         dir2 = apply_rotation(dir2, rot_yaw)
-        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
+        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length_elbow))
 
         return joint2
 
