@@ -1,8 +1,10 @@
+#main.py
+
 import raylibpy as rl
-from robot2 import RobotArm
+from robot import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
-import math
+import numpy as np
 
 WIDTH, HEIGHT = 1600, 900
 
@@ -14,7 +16,7 @@ rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
 rl.set_target_fps(60)
 
 camera = rl.Camera3D()
-camera.position = rl.Vector3(5.0, 5.0, 5.0)
+camera.position = rl.Vector3(-5.0, 6.0, -5.0)
 camera.target = rl.Vector3(0.0, 0.0, 0.0)
 camera.up = rl.Vector3(0.0, 1.0, 0.0)
 camera.fovy = 45.0
@@ -28,7 +30,7 @@ def distance_vec3(a, b):
 
 robot = RobotArm()
 primitive = Primitive()
-seq_manager = SequenceManager(robot)
+seq_manager = SequenceManager(robot, primitive)
 
 mode = 'teach'
 
@@ -54,12 +56,12 @@ while not rl.window_should_close():
     if rl.is_mouse_button_down(rl.MOUSE_BUTTON_LEFT) and rl.is_cursor_on_screen():
         yaw += mouse_delta.x * sensitivity
         pitch -= mouse_delta.y * sensitivity
-        pitch = max(-math.pi/2 + 0.1, min(math.pi/2 - 0.1, pitch))
+        pitch = max(-np.pi/2 + 0.1, min(np.pi/2 - 0.1, pitch))
 
         # Oblicz pozycję kamery względem celu
-        camera.position.x = camera.target.x + radius * math.cos(pitch) * math.sin(yaw)
-        camera.position.y = camera.target.y + radius * math.sin(pitch)
-        camera.position.z = camera.target.z + radius * math.cos(pitch) * math.cos(yaw)
+        camera.position.x = camera.target.x + radius * np.cos(pitch) * np.sin(yaw)
+        camera.position.y = camera.target.y + radius * np.sin(pitch)
+        camera.position.z = camera.target.z + radius * np.cos(pitch) * np.cos(yaw)
 
     # Przesuwanie kamery LPM
     if rl.is_mouse_button_down(rl.MOUSE_BUTTON_RIGHT) and rl.is_cursor_on_screen():
@@ -93,22 +95,26 @@ while not rl.window_should_close():
             obj_pos = primitive.position
 
             if distance_vec3(end_pos, obj_pos) < primitive.radius:
-                robot.grasp(primitive)
+                if robot.grabbing == False:
+                    robot.grasp(primitive)
+                else:
+                    print("Chwytak jest zamknięty, nie można chwycić.")
             else:
+                robot.grasp(None)
                 print("Za daleko od obiektu, nie można chwycić.")
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
-        if rl.is_key_down(rl.KEY_W):
+        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.8*(np.pi / 4):
             robot.joint_angles[0] += 0.01
-        if rl.is_key_down(rl.KEY_S):
+        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.95*(np.pi / 4) and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[0] -= 0.01
-        if rl.is_key_down(rl.KEY_A):
+        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9* np.pi:
             robot.joint_angles[1] += 0.01
-        if rl.is_key_down(rl.KEY_D):
+        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > - 0.9 * np.pi:
             robot.joint_angles[1] -= 0.01
-        if rl.is_key_down(rl.KEY_UP):
+        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < 0.8 * (np.pi/8):
             robot.joint_angles[2] += 0.01
-        if rl.is_key_down(rl.KEY_DOWN):
+        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * np.pi and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[2] -= 0.01
     elif mode == 'play':
         seq_manager.playback()
@@ -118,12 +124,30 @@ while not rl.window_should_close():
     rl.clear_background(rl.RAYWHITE)
 
     rl.begin_mode3d(camera)
+
+    # Rysowanie robota
     robot.draw()
+
+    # Rysowanie cienia robota
+    light_direction = rl.Vector3(-0.5, -1.0, -0.5)  # Kierunek światła
+    robot.draw_shadow(light_direction)
+
+    # Rysowanie obiektu
     primitive.draw()
+
+    # Rysowanie cienia obiektu
+    primitive.draw_shadow(light_direction)
+
     rl.draw_grid(10, 1.0)
     rl.end_mode3d()
     
+    degrees = np.degrees(robot.joint_angles)
+
     rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release", 10, 10, 20, rl.DARKGRAY)
+    rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
+    rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
+    rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
+    rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 130, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()
