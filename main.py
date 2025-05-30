@@ -1,3 +1,5 @@
+#main.py
+
 import raylibpy as rl
 from robot import RobotArm
 from primitives import Primitive

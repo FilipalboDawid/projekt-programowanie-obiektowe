@@ -1,3 +1,5 @@
+#sequence.py
+
 import copy
 
 class SequenceManager:
@@ -23,9 +25,13 @@ class SequenceManager:
         frame = self.frames[self.play_index]
         self.robot.joint_angles = copy.deepcopy(frame['angles'])
         self.robot.grabbing = frame['grabbing']
-        self.robot.grabbed_object = frame['grabbed_object']
-        self.primitive.position = copy.deepcopy(frame['primitive_position'])
-        self.play_index += 1
 
-        if self.robot.grabbing and self.robot.grabbed_object:
-            self.robot.grabbed_object.position = self.robot.get_end_effector_pos()
+        # Ustaw chwytany obiekt tylko jeśli "grabbing" jest True
+        if self.robot.grabbing:
+            self.robot.grasp(self.primitive)
+            self.primitive.position = self.robot.get_end_effector_pos()
+        else:
+            self.robot.release()
+            self.primitive.position = copy.deepcopy(frame['primitive_position'])
+
+        self.play_index += 1
