@@ -1,5 +1,3 @@
-#main.py
-
 import raylibpy as rl
 from robot import RobotArm
 from primitives import Primitive
@@ -7,8 +5,6 @@ from sequence import SequenceManager
 import numpy as np
 
 WIDTH, HEIGHT = 1600, 900
-
-
 
 yaw = 0.0
 pitch = 0.0
@@ -118,12 +114,6 @@ while not rl.window_should_close():
             robot.joint_angles[2] += 0.01
         if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * np.pi and robot.get_end_effector_pos().y > 0.1:
             robot.joint_angles[2] -= 0.01
-        if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
-            target_x = float(input("Enter X coordinate: "))
-            target_y = float(input("Enter Y coordinate: "))
-            target_z = float(input("Enter Z coordinate: "))
-            target_position = rl.Vector3(target_x, target_y, target_z)
-            robot.move_to_position(target_position)
     elif mode == 'play':
         seq_manager.playback()
 
@@ -132,26 +122,14 @@ while not rl.window_should_close():
     rl.clear_background(rl.RAYWHITE)
 
     rl.begin_mode3d(camera)
-
-    # Rysowanie robota
     robot.draw()
-
-    # Rysowanie cienia robota
-    light_direction = rl.Vector3(-0.5, -1.0, -0.5)  # Kierunek światła
-    robot.draw_shadow(light_direction)
-
-    # Rysowanie obiektu
     primitive.draw()
-
-    # Rysowanie cienia obiektu
-    primitive.draw_shadow(light_direction)
-
     rl.draw_grid(10, 1.0)
     rl.end_mode3d()
     
     degrees = np.degrees(robot.joint_angles)
 
-    rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
+    rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release", 10, 10, 20, rl.DARKGRAY)
     rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)

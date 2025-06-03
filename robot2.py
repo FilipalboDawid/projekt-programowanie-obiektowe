@@ -1,5 +1,5 @@
 import raylibpy as rl
-import math
+import numpy as np
 
 # Pomocnicze funkcje wektorowe
 def vec3_add(v1, v2):
@@ -11,21 +11,21 @@ def vec3_scale(v, scalar):
 def rotation_x(angle):
     return [
         [1, 0, 0],
-        [0, math.cos(angle), -math.sin(angle)],
-        [0, math.sin(angle), math.cos(angle)]
+        [0, np.cos(angle), -np.sin(angle)],
+        [0, np.sin(angle), np.cos(angle)]
     ]
 
 def rotation_y(angle):
     return [
-        [math.cos(angle), 0, math.sin(angle)],
+        [np.cos(angle), 0, np.sin(angle)],
         [0, 1, 0],
-        [-math.sin(angle), 0, math.cos(angle)]
+        [-np.sin(angle), 0, np.cos(angle)]
     ]
 
 def rotation_z(angle):
     return [
-        [math.cos(angle), -math.sin(angle), 0],
-        [math.sin(angle), math.cos(angle), 0],
+        [np.cos(angle), -np.sin(angle), 0],
+        [np.sin(angle), np.cos(angle), 0],
         [0, 0, 1]
     ]
 

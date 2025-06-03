@@ -2,7 +2,6 @@
 
 import raylibpy as rl
 import numpy as np
-import math
 
 # Pomocnicze funkcje wektorowe
 def vec3_add(v1, v2):
@@ -70,7 +69,7 @@ class RobotArm:
         x, y, z = target_position.x, target_position.y, target_position.z
 
         # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
-        distance = math.sqrt(x**2 + z**2)
+        distance = np.sqrt(x**2 + z**2)
 
         # Sprawdź, czy cel jest osiągalny
         if distance > 2 * self.segment_length or y < 0:
@@ -78,9 +77,9 @@ class RobotArm:
             return False
 
         # Oblicz kąty stawów
-        shoulder_yaw = math.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
-        shoulder_pitch = math.atan2(y, distance)  # Kąt podniesienia ramienia
-        elbow_angle = -math.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
+        shoulder_yaw = np.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
+        shoulder_pitch = np.atan2(y, distance)  # Kąt podniesienia ramienia
+        elbow_angle = -np.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
 
         # Zaktualizuj kąty stawów
         self.joint_angles[0] = shoulder_pitch
@@ -99,7 +98,7 @@ class RobotArm:
         x, y, z = target_position.x, target_position.y, target_position.z
 
         # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
-        distance = math.sqrt(x**2 + z**2)
+        distance = np.sqrt(x**2 + z**2)
 
         # Sprawdź, czy cel jest osiągalny
         if distance > 2 * self.segment_length or y < 0:
@@ -107,9 +106,9 @@ class RobotArm:
             return False
 
         # Oblicz docelowe kąty stawów
-        shoulder_yaw = math.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
-        shoulder_pitch = math.atan2(y, distance)  # Kąt podniesienia ramienia
-        elbow_angle = -math.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
+        shoulder_yaw = np.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
+        shoulder_pitch = np.atan2(y, distance)  # Kąt podniesienia ramienia
+        elbow_angle = -np.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
 
         # Stopniowe przesuwanie kątów
         self.joint_angles[0] += step * (shoulder_pitch - self.joint_angles[0])

@@ -15,7 +15,7 @@ class Primitive:
             0.0,  # Cień na płaszczyźnie
             self.position.z - light_direction.z * self.position.y
         )
-        rl.draw_circle(int(shadow_position.x * 100), int(shadow_position.z * 100), self.radius * 100, rl.GRAY)
+        rl.draw_sphere(shadow_position, self.radius, rl.GRAY)
 
     def draw(self):
         rl.draw_sphere(self.position, self.radius, rl.DARKBLUE)
