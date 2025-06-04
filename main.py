@@ -6,10 +6,14 @@ from robot import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
 import numpy as np
+import ctypes
 
 
 # Stałe
 WIDTH, HEIGHT = 1600, 900
+
+light_dir = (-0.5, -1.0, -0.5)
+light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
 
 # Definicje
 def distance_vec3(a, b):
@@ -21,6 +25,13 @@ def distance_vec3(a, b):
 
 # Inicjalizacja
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
+
+# Shader
+shader = rl.load_shader("shadow.vs", "shadow.fs")
+
+light_dir_loc = rl.get_shader_location(shader, b"lightDirection")
+rl.set_shader_value(shader, light_dir_loc, light_dir_ctypes, rl.SHADER_UNIFORM_VEC3)
+
 rl.set_target_fps(60)
 
 camera = rl.Camera3D()
@@ -180,17 +191,18 @@ while not rl.window_should_close():
     rl.begin_mode3d(camera)
 
     # Rysowanie robota
-    robot.draw()
+    rl.begin_shader_mode(shader)
+    robot.draw()  # lub ręczne rysowanie segmentów
+    rl.end_shader_mode()
+
 
     # Rysowanie cienia robota
     light_direction = rl.Vector3(-0.5, -1.0, -0.5)  # Kierunek światła
-    robot.draw_shadow(light_direction)
 
     # Rysowanie obiektu
-    primitive.draw()
-
-    # Rysowanie cienia obiektu
-    primitive.draw_shadow(light_direction)
+    rl.begin_shader_mode(shader)
+    primitive.draw()  # lub ręczne rysowanie segmentów
+    rl.end_shader_mode()
 
     rl.draw_grid(20, 0.5)
     rl.end_mode3d()
