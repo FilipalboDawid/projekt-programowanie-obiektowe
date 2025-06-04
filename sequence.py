@@ -1,14 +1,17 @@
 #sequence.py
 
+# Importy
 import copy
 
+# Klasa SequenceManager
 class SequenceManager:
+    # Inicjalizcja
     def __init__(self, robot, primitive):
         self.robot = robot
         self.primitive = primitive
         self.frames = []
         self.play_index = 0
-
+    # Nagrywanie ruchów
     def record_frame(self):
         self.frames.append({
         'angles': copy.deepcopy(self.robot.joint_angles),
@@ -16,6 +19,7 @@ class SequenceManager:
         'grabbed_object': self.robot.grabbed_object,
         'primitive_position': copy.deepcopy(self.primitive.position)
         })
+    # Odtwarzanie nagranych ruchów
     def playback(self):
         if not self.frames:
             return

@@ -1,8 +1,11 @@
 #robot.py
 
+
+# Importy
 import raylibpy as rl
 import numpy as np
 
+# Definicje
 # Pomocnicze funkcje wektorowe
 def vec3_add(v1, v2):
     return rl.Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
@@ -30,6 +33,14 @@ def rotation_z(angle):
         [np.sin(angle), np.cos(angle), 0],
         [0, 0, 1]
     ]
+
+def apply_rotation(vec, mat):
+    x = vec.x * mat[0][0] + vec.y * mat[0][1] + vec.z * mat[0][2]
+    y = vec.x * mat[1][0] + vec.y * mat[1][1] + vec.z * mat[1][2]
+    z = vec.x * mat[2][0] + vec.y * mat[2][1] + vec.z * mat[2][2]
+    return rl.Vector3(x, y, z)
+
+# Obliczanie cienia
 def calculate_shading(light_direction, normal):
     """
     Oblicza kolor na podstawie kąta między kierunkiem światła a normalną powierzchni.
@@ -47,13 +58,9 @@ def calculate_shading(light_direction, normal):
     shaded_color = rl.color_from_normalized(intensity * rl.color_to_normalized(base_color))
     return shaded_color
 
-def apply_rotation(vec, mat):
-    x = vec.x * mat[0][0] + vec.y * mat[0][1] + vec.z * mat[0][2]
-    y = vec.x * mat[1][0] + vec.y * mat[1][1] + vec.z * mat[1][2]
-    z = vec.x * mat[2][0] + vec.y * mat[2][1] + vec.z * mat[2][2]
-    return rl.Vector3(x, y, z)
-
+# Klasa RobotArm
 class RobotArm:
+    # Initializacja
     def __init__(self):
         self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
         self.segment_length = 2.0
@@ -62,7 +69,7 @@ class RobotArm:
         self.gripper_model = rl.gen_mesh_cube(1.0, 1.0, 1.0)
         self.gripper_model = rl.load_model_from_mesh(self.gripper_model)
     
-    
+    # Ruch do określonej pozycji (teleportacja)
     def move_to_position(self, target_position):
         """
         Przemieszcza ramię robota do określonej pozycji.
@@ -91,6 +98,7 @@ class RobotArm:
         print(f"Robot przemieścił się do pozycji: {target_position}")
         return True
     
+    # Ruch do określonej pozycji -- do naprawy
     def move_to_position_smooth(self, target_position, step=0.01):
         """
         Przemieszcza ramię robota stopniowo do określonej pozycji.
@@ -119,6 +127,8 @@ class RobotArm:
 
         return True
     
+
+    # Rysowanie cienia ramienia robota
     def draw_shadow(self, light_direction):
         """
         Rysuje cień ramienia robota na płaszczyźnie na podstawie kierunku światła.
@@ -161,6 +171,8 @@ class RobotArm:
             shadow_gripper = rl.Vector3(joint2.x - light_direction.x * joint2.y, 0.0, joint2.z - light_direction.z * joint2.y)
             rl.draw_cube(shadow_gripper, 0.2, 0.1, 0.2, rl.GRAY)
     
+
+    # Obsługa wejścia z klawiatury
     def handle_input(self):
         if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(np.pi / 4): self.joint_angles[0] += 0.02  # Shoulder Pitch (X)
         if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(np.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.02
@@ -171,7 +183,7 @@ class RobotArm:
         if rl.is_key_pressed(rl.KEY_ZERO):
             self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
 
-
+    # Rysowanie ramienia robota
     def draw(self):
         base = rl.Vector3(0, 0.5, 0)
         up = rl.Vector3(0, 1, 0)
@@ -195,7 +207,9 @@ class RobotArm:
         rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)  # Rysowanie stawów
         rl.draw_sphere(base, 0.2, rl.DARKGRAY)
         rl.draw_cylinder_ex([0,0,0], base, 0.5, 0.5, 20, rl.DARKGRAY)  # Rysowanie podstawy
-        # Gripper orientation
+        
+        # Chwytak
+        # Oreintacja chwytaka
         gripper_direction = dir2
         normalized_dir = rl.vector3_normalize(gripper_direction)
 
@@ -243,6 +257,7 @@ class RobotArm:
         if self.grabbing and self.grabbed_object:
             self.grabbed_object.position = joint2
 
+    # Pobranie pozycji końcówki ramienia robota
     def get_end_effector_pos(self):
         base = rl.Vector3(0, 0, 0)
         up = rl.Vector3(0, 1, 0)
@@ -260,7 +275,8 @@ class RobotArm:
         joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
 
         return joint2
-
+    
+    # Chwytanie obiektu
     def grasp(self, primitive):
         self.grabbing = True
         self.grabbed_object = primitive

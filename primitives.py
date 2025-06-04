@@ -1,12 +1,16 @@
 #primitives.py
 
+# Importy
 import raylibpy as rl
 
+# Klasa Primitive
 class Primitive:
+    # Inicjalizacja
     def __init__(self):
         self.position = rl.Vector3(0.0, 0.5, -1.0)
         self.radius = 0.5
 
+    # Rysowanie cienia kuli na płaszczyźnie
     def draw_shadow(self, light_direction):
         """
         Rysuje cień kuli na płaszczyźnie na podstawie kierunku światła.
@@ -19,5 +23,6 @@ class Primitive:
         )
         rl.draw_sphere(shadow_position, self.radius, rl.GRAY)
 
+    # Rysowanie kuli
     def draw(self):
         rl.draw_sphere(self.position, self.radius, rl.DARKBLUE)

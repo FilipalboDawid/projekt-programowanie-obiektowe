@@ -1,13 +1,17 @@
 #main.py
 
+# Importy
 import raylibpy as rl
 from robot import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
 import numpy as np
 
+
+# Stałe
 WIDTH, HEIGHT = 1600, 900
 
+# Definicje
 def distance_vec3(a, b):
     dx = a.x - b.x
     dy = a.y - b.y
@@ -15,6 +19,7 @@ def distance_vec3(a, b):
     return (dx*dx + dy*dy + dz*dz) ** 0.5
 
 
+# Inicjalizacja
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
 rl.set_target_fps(60)
 
@@ -27,7 +32,7 @@ camera.projection = rl.CAMERA_PERSPECTIVE
 
 radius = distance_vec3(camera.position, camera.target)
 
-# Oblicz początkowy yaw i pitch na podstawie pozycji kamery
+# Obliczanie początkowych yaw i pitch na podstawie pozycji kamery
 offset = rl.vector3_subtract(camera.position, camera.target)
 radius = distance_vec3(camera.position, camera.target)
 
@@ -45,7 +50,7 @@ primitive = Primitive()
 seq_manager = SequenceManager(robot, primitive)
 
 mode = 'free'
-
+# Pętla główna
 while not rl.window_should_close():
     if rl.is_key_down(rl.KEY_T):
         mode = 'teach'
@@ -54,6 +59,7 @@ while not rl.window_should_close():
     if rl.is_key_down(rl.KEY_F):
         mode = 'free'
 
+    # Obsługa kamery
     mouse_delta = rl.get_mouse_delta()
     sensitivity = 0.003
     pan_speed = 0.01
@@ -113,6 +119,8 @@ while not rl.window_should_close():
         zoom_vector = rl.vector3_scale(forward, zoom_amount)
         camera.position = rl.vector3_add(camera.position, zoom_vector)
 
+    # Obsługa robota
+    # Tryb nauki
     if mode == 'teach':
         robot.handle_input()
         seq_manager.record_frame()
@@ -136,11 +144,13 @@ while not rl.window_should_close():
             target_z = float(input("Enter Z coordinate: "))
             target_position = rl.Vector3(target_x, target_y, target_z)
             robot.move_to_position(target_position)
+    # Tryb odtwarzania ruchów
     elif mode == 'play':
         if seq_manager.frames == []:
             rl.draw_text(f"Nie nagrano zadnych ruchow. Przelacz sie na tryb nauki (T), aby nagrac sekwencje.", 10, 150, 20, rl.DARKGRAY)
         else:
             seq_manager.playback()
+    # Tryb swobodny
     elif mode == 'free':
         robot.handle_input()
         if rl.is_key_pressed(rl.KEY_G):
@@ -182,11 +192,12 @@ while not rl.window_should_close():
     # Rysowanie cienia obiektu
     primitive.draw_shadow(light_direction)
 
-    rl.draw_grid(10, 1.0)
+    rl.draw_grid(20, 0.5)
     rl.end_mode3d()
     
     degrees = np.degrees(robot.joint_angles)
 
+    # Wyświetlanie informacji na ekranie
     rl.draw_text(f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
     rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
     rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 70, 20, rl.DARKGRAY)
