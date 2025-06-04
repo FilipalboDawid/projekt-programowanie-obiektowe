@@ -137,7 +137,10 @@ while not rl.window_should_close():
             target_position = rl.Vector3(target_x, target_y, target_z)
             robot.move_to_position(target_position)
     elif mode == 'play':
-        seq_manager.playback()
+        if seq_manager.frames == []:
+            rl.draw_text(f"Nie nagrano zadnych ruchow. Przelacz sie na tryb nauki (T), aby nagrac sekwencje.", 10, 150, 20, rl.DARKGRAY)
+        else:
+            seq_manager.playback()
     elif mode == 'free':
         robot.handle_input()
         if rl.is_key_pressed(rl.KEY_G):
@@ -186,9 +189,9 @@ while not rl.window_should_close():
 
     rl.draw_text(f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
     rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
-    rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
-    rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
-    rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 130, 20, rl.DARKGRAY)
+    rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 70, 20, rl.DARKGRAY)
+    rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 100, 20, rl.DARKGRAY)
+    rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 130, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()

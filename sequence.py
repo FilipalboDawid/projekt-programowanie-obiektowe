@@ -3,7 +3,7 @@
 import copy
 
 class SequenceManager:
-    def __init__(self, robot):
+    def __init__(self, robot, primitive):
         self.robot = robot
         self.primitive = primitive
         self.frames = []

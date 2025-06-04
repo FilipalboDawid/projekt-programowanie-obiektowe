@@ -59,6 +59,8 @@ class RobotArm:
         self.segment_length = 2.0
         self.grabbing = False
         self.grabbed_object = None
+        self.gripper_model = rl.gen_mesh_cube(1.0, 1.0, 1.0)
+        self.gripper_model = rl.load_model_from_mesh(self.gripper_model)
     
     
     def move_to_position(self, target_position):
@@ -150,8 +152,7 @@ class RobotArm:
 
         # Rysowanie cieni dla stawów
         rl.draw_sphere(shadow_joint1, 0.2, rl.GRAY)
-        rl.draw_sphere(shadow_joint2, 0.2, rl.GRAY)
-
+        
         # Rysowanie cienia chwytaka
         if self.grabbing:
             shadow_gripper = rl.Vector3(joint2.x - light_direction.x * joint2.y, 0.0, joint2.z - light_direction.z * joint2.y)
@@ -167,6 +168,9 @@ class RobotArm:
         if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * np.pi: self.joint_angles[1] -= 0.02
         if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (np.pi/8): self.joint_angles[2] += 0.02  # Elbow (X)
         if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * np.pi and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] -= 0.02
+        if rl.is_key_pressed(rl.KEY_ZERO):
+            self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
+
 
     def draw(self):
         base = rl.Vector3(0, 0.5, 0)
@@ -191,15 +195,53 @@ class RobotArm:
         rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)  # Rysowanie stawów
         rl.draw_sphere(base, 0.2, rl.DARKGRAY)
         rl.draw_cylinder_ex([0,0,0], base, 0.5, 0.5, 20, rl.DARKGRAY)  # Rysowanie podstawy
-        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
-        if self.grabbing:
-            rl.draw_cube(joint2, 0.3, 0.3, 0.3, rl.DARKGRAY)  # Rysowanie chwytu
-        else:
-            rl.draw_cube(joint2, 0.2, 0.2, 0.2, rl.BLACK)
+        # Gripper orientation
+        gripper_direction = dir2
+        normalized_dir = rl.vector3_normalize(gripper_direction)
+
+        default_up = rl.Vector3(0, 1, 0)
+        axis = rl.vector3_cross_product(default_up, normalized_dir)
+        dot = rl.vector3_dot_product(default_up, normalized_dir)
+        angle_rad = np.arccos(dot)
+        angle_deg = np.degrees(angle_rad)
+
+        if rl.vector3_length(axis) < 0.0001:
+            axis = rl.Vector3(1, 0, 0)  # dowolna oś, jeśli są równoległe
+
+        scale = rl.Vector3(0.3, 0.1, 0.3) if self.grabbing else rl.Vector3(0.2, 0.1, 0.2)
+        gripper_color = rl.DARKGRAY if self.grabbing else rl.BLACK
+
+        # Zmienna gripper spread - odległość palców
+        spread = 0.05 if self.grabbing else 0.15
+
+        # Kierunek chwytaka
+        gripper_direction = dir2
+        normalized_dir = rl.vector3_normalize(gripper_direction)
+
+        # Znajdź wektor prostopadły do kierunku chwytaka – np. oś lokalna X chwytaka
+        default_right = rl.Vector3(0, 1, 0)
+        side_vector = rl.vector3_cross_product(normalized_dir, default_right)
+        if rl.vector3_length(side_vector) < 0.001:
+            side_vector = rl.Vector3(0, 0, 1)  # fallback, jeśli wektory są równoległe
+
+        side_vector = rl.vector3_normalize(side_vector)
+
+        # Pozycje dwóch palców
+        finger1_pos = rl.vector3_add(joint2, rl.vector3_scale(side_vector, spread))
+        finger2_pos = rl.vector3_subtract(joint2, rl.vector3_scale(side_vector, spread))
+
+        # Rozmiar palców
+        finger_size = rl.Vector3(0.05, 0.2, 0.05)
+
+        # Kolor
+        color = rl.DARKGRAY if self.grabbing else rl.DARKGRAY
+
+        # Narysuj oba palce
+        rl.draw_cube(finger1_pos, finger_size.x, finger_size.y, finger_size.z, color)
+        rl.draw_cube(finger2_pos, finger_size.x, finger_size.y, finger_size.z, color)
+
         if self.grabbing and self.grabbed_object:
             self.grabbed_object.position = joint2
-
-        #print(self.get_end_effector_pos())
 
     def get_end_effector_pos(self):
         base = rl.Vector3(0, 0, 0)
