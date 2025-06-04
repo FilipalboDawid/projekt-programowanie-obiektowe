@@ -1,4 +1,4 @@
-#roboty.py
+#robot.py
 
 import raylibpy as rl
 import numpy as np
