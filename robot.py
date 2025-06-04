@@ -161,12 +161,12 @@ class RobotArm:
             rl.draw_cube(shadow_gripper, 0.2, 0.1, 0.2, rl.GRAY)
     
     def handle_input(self):
-        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(np.pi / 4): self.joint_angles[0] += 0.01  # Shoulder Pitch (X)
-        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(np.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.01
-        if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < 0.9* np.pi: self.joint_angles[1] += 0.01  # Shoulder Yaw (Y)
-        if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * np.pi: self.joint_angles[1] -= 0.01
-        if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (np.pi/8): self.joint_angles[2] += 0.01  # Elbow (X)
-        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * np.pi and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] -= 0.01
+        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(np.pi / 4): self.joint_angles[0] += 0.02  # Shoulder Pitch (X)
+        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(np.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.02
+        if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < 0.9* np.pi: self.joint_angles[1] += 0.02  # Shoulder Yaw (Y)
+        if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * np.pi: self.joint_angles[1] -= 0.02
+        if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (np.pi/8): self.joint_angles[2] += 0.02  # Elbow (X)
+        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * np.pi and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] -= 0.02
 
     def draw(self):
         base = rl.Vector3(0, 0.5, 0)

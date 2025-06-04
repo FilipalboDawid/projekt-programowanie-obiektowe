@@ -44,13 +44,15 @@ robot = RobotArm()
 primitive = Primitive()
 seq_manager = SequenceManager(robot, primitive)
 
-mode = 'teach'
+mode = 'free'
 
 while not rl.window_should_close():
     if rl.is_key_down(rl.KEY_T):
         mode = 'teach'
     if rl.is_key_down(rl.KEY_P):
         mode = 'play'
+    if rl.is_key_down(rl.KEY_F):
+        mode = 'free'
 
     mouse_delta = rl.get_mouse_delta()
     sensitivity = 0.003
@@ -128,18 +130,6 @@ while not rl.window_should_close():
                 print("Za daleko od obiektu, nie można chwycić.")
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
-        if rl.is_key_down(rl.KEY_W) and robot.joint_angles[0] < 0.8*(np.pi / 4):
-            robot.joint_angles[0] += 0.01
-        if rl.is_key_down(rl.KEY_S) and robot.joint_angles[0] > -0.95*(np.pi / 4) and robot.get_end_effector_pos().y > 0.1:
-            robot.joint_angles[0] -= 0.01
-        if rl.is_key_down(rl.KEY_A) and robot.joint_angles[1] < 0.9* np.pi:
-            robot.joint_angles[1] += 0.01
-        if rl.is_key_down(rl.KEY_D) and robot.joint_angles[1] > - 0.9 * np.pi:
-            robot.joint_angles[1] -= 0.01
-        if rl.is_key_down(rl.KEY_UP) and robot.joint_angles[2] < 0.8 * (np.pi/8):
-            robot.joint_angles[2] += 0.01
-        if rl.is_key_down(rl.KEY_DOWN) and robot.joint_angles[2] > -0.8 * np.pi and robot.get_end_effector_pos().y > 0.1:
-            robot.joint_angles[2] -= 0.01
         if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
             target_x = float(input("Enter X coordinate: "))
             target_y = float(input("Enter Y coordinate: "))
@@ -148,6 +138,27 @@ while not rl.window_should_close():
             robot.move_to_position(target_position)
     elif mode == 'play':
         seq_manager.playback()
+    elif mode == 'free':
+        robot.handle_input()
+        if rl.is_key_pressed(rl.KEY_G):
+            end_pos = robot.get_end_effector_pos()
+            obj_pos = primitive.position
+            if distance_vec3(end_pos, obj_pos) < primitive.radius:
+                if robot.grabbing == False:
+                    robot.grasp(primitive)
+                else:
+                    print("Chwytak jest zamknięty, nie można chwycić.")
+            else:
+                robot.grasp(None)
+                print("Za daleko od obiektu, nie można chwycić.")
+        if rl.is_key_pressed(rl.KEY_R):
+            robot.release()
+        if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
+            target_x = float(input("Enter X coordinate: "))
+            target_y = float(input("Enter Y coordinate: "))
+            target_z = float(input("Enter Z coordinate: "))
+            target_position = rl.Vector3(target_x, target_y, target_z)
+            robot.move_to_position(target_position)
 
     # Rysowanie
     rl.begin_drawing()
@@ -173,7 +184,7 @@ while not rl.window_should_close():
     
     degrees = np.degrees(robot.joint_angles)
 
-    rl.draw_text(f"Mode: {mode.upper()} (T/P) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
+    rl.draw_text(f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
     rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 100, 20, rl.DARKGRAY)
