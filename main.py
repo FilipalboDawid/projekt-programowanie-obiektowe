@@ -193,16 +193,18 @@ while not rl.window_should_close():
     # Rysowanie robota
     rl.begin_shader_mode(shader)
     robot.draw()  # lub ręczne rysowanie segmentów
+    primitive.draw()  # lub ręczne rysowanie segmentów
     rl.end_shader_mode()
 
 
     # Rysowanie cienia robota
     light_direction = rl.Vector3(-0.5, -1.0, -0.5)  # Kierunek światła
 
-    # Rysowanie obiektu
-    rl.begin_shader_mode(shader)
-    primitive.draw()  # lub ręczne rysowanie segmentów
-    rl.end_shader_mode()
+    # # Rysowanie obiektu
+    # rl.begin_shader_mode(shadow_shader)
+    # robot.draw()  # lub ręczne rysowanie segmentów
+    # primitive.draw()  # lub ręczne rysowanie segmentów
+    # rl.end_shader_mode()
 
     rl.draw_grid(20, 0.5)
     rl.end_mode3d()
