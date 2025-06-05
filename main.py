@@ -22,6 +22,9 @@ def distance_vec3(a, b):
     dz = a.z - b.z
     return (dx*dx + dy*dy + dz*dz) ** 0.5
 
+def draw_text_3d(text, position3d, font_size=10, spacing=1, color=rl.BLACK):
+    screen_pos = rl.get_world_to_screen(position3d, camera)
+    rl.draw_text(text, int(screen_pos.x), int(screen_pos.y), font_size, color)
 
 # Inicjalizacja
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
@@ -35,7 +38,7 @@ rl.set_shader_value(shader, light_dir_loc, light_dir_ctypes, rl.SHADER_UNIFORM_V
 rl.set_target_fps(60)
 
 camera = rl.Camera3D()
-camera.position = rl.Vector3(-5.0, 6.0, -5.0)
+camera.position = rl.Vector3(5.0, 6.0, 5.0)
 camera.target = rl.Vector3(0.0, 0.0, 0.0)
 camera.up = rl.Vector3(0.0, 1.0, 0.0)
 camera.fovy = 45.0
@@ -263,6 +266,21 @@ while not rl.window_should_close():
             
 
     rl.begin_mode3d(camera)
+    # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
+    axis_length = 2
+    origin = (0, 0, 0)
+
+    # Oś X (czerwona)
+    rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
+    draw_text_3d("X", (axis_length + 1, 0, 0), 10, 0.01, rl.RED)
+
+    # Oś Y (zielona)
+    rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
+    draw_text_3d("Y", (0, axis_length + 1, 0), 10, 0.01, rl.GREEN)
+
+    # Oś Z (niebieska)
+    rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
+    draw_text_3d("Z", (0, 0, axis_length + 1), 10, 0.01, rl.BLUE)
 
     # Rysowanie robota
     rl.begin_shader_mode(shader)

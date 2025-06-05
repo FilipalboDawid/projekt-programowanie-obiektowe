@@ -6,6 +6,7 @@ import raylibpy as rl
 import numpy as np
 
 # Definicje
+init_angles = [np.deg2rad(25), np.deg2rad(0), np.deg2rad(100)]
 # Pomocnicze funkcje wektorowe
 def vec3_add(v1, v2):
     return rl.Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
@@ -56,7 +57,7 @@ def calculate_shading(light_direction, normal):
 class RobotArm:
     # Initializacja
     def __init__(self):
-        self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
+        self.joint_angles = init_angles  # shoulder_pitch, shoulder_yaw, elbow
         self.segment_length = 2.0
         self.grabbing = False
         self.grabbed_object = None
@@ -89,7 +90,7 @@ class RobotArm:
             print("Błąd geometrii (cos_elbow poza zakresem)")
             return False
         elbow_angle = -np.arccos(cos_elbow)
-        shoulder_pitch = np.arctan2(dy, planar_distance) + elbow_angle / 2
+        shoulder_pitch = np.arctan2(dy, planar_distance) #+ elbow_angle / 2
 
         self.target_joint_angles = [shoulder_pitch, shoulder_yaw, elbow_angle]
         self.reaching = True
@@ -112,14 +113,14 @@ class RobotArm:
 
     # Obsługa wejścia z klawiatury
     def handle_input(self):
-        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(np.pi / 4): self.joint_angles[0] += 0.02  # Shoulder Pitch (X)
-        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(np.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.02
+        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.95*(np.pi / 4): self.joint_angles[0] += 0.02  # Shoulder Pitch (X)
+        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.8*(np.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.02
         if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < 0.9* np.pi: self.joint_angles[1] += 0.02  # Shoulder Yaw (Y)
         if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * np.pi: self.joint_angles[1] -= 0.02
-        if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (np.pi/8): self.joint_angles[2] += 0.02  # Elbow (X)
-        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * np.pi and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] -= 0.02
+        if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] > 0.8 * (np.pi/6): self.joint_angles[2] -= 0.02  # Elbow (X)
+        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > 0.8 * (np.pi/8) and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] += 0.02
         if rl.is_key_pressed(rl.KEY_ZERO):
-            self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
+            self.joint_angles = init_angles  # shoulder_pitch, shoulder_yaw, elbow
 
     # Rysowanie ramienia robota
     def draw(self):
