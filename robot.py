@@ -42,12 +42,6 @@ def apply_rotation(vec, mat):
 
 # Obliczanie cienia
 def calculate_shading(light_direction, normal):
-    """
-    Oblicza kolor na podstawie kąta między kierunkiem światła a normalną powierzchni.
-    :param light_direction: Kierunek światła (Vector3).
-    :param normal: Normalna powierzchni (Vector3).
-    :return: Kolor (Color).
-    """
     light_dir_normalized = rl.vector3_normalize(light_direction)
     normal_normalized = rl.vector3_normalize(normal)
     dot_product = rl.vector3_dot_product(light_dir_normalized, normal_normalized)

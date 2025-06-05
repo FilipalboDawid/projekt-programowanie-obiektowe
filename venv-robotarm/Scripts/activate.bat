@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\filip\Documents\Studia\Programowanie_obiektowe\Projekt\RobotArm\venv-robotarm
+set VIRTUAL_ENV=C:\Users\filip\Documents\Studia\Programowanie_obiektowe\Projekt\projekt-programowanie-obiektowe\venv-robotarm
 
 if not defined PROMPT set PROMPT=$P$G
 
