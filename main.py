@@ -184,6 +184,8 @@ while not rl.window_should_close():
             target_position = rl.Vector3(target_x, target_y, target_z)
             robot.move_to_position(target_position)
 
+    # Aktualizacja ruchu robota
+    robot.update_motion()
     # Rysowanie
     rl.begin_drawing()
     rl.clear_background(rl.RAYWHITE)

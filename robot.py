@@ -68,36 +68,54 @@ class RobotArm:
         self.grabbed_object = None
         self.gripper_model = rl.gen_mesh_cube(1.0, 1.0, 1.0)
         self.gripper_model = rl.load_model_from_mesh(self.gripper_model)
+        self.reaching = False
+        self.target_pos = rl.Vector3(0, 0, 0)
+        self.interp_alpha = 0.0  # lub 1.0, jeśli wolisz domyślnie "brak interpolacji"
+
     
     # Ruch do określonej pozycji (teleportacja)
     def move_to_position(self, target_position):
-        """
-        Przemieszcza ramię robota do określonej pozycji.
-        :param target_position: Wektor docelowej pozycji (Vector3).
-        """
         x, y, z = target_position.x, target_position.y, target_position.z
 
-        # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
-        distance = np.sqrt(x**2 + z**2)
+        dx = x
+        dy = y - 0.5
+        dz = z
+        distance = np.sqrt(dx**2 + dy**2 + dz**2)
 
-        # Sprawdź, czy cel jest osiągalny
-        if distance > 2 * self.segment_length or y < 0:
-            print("Cel poza zasięgiem robota!")
+        if distance > 2 * self.segment_length:
+            print("Cel poza zasięgiem!")
             return False
 
-        # Oblicz kąty stawów
-        shoulder_yaw = np.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
-        shoulder_pitch = np.atan2(y, distance)  # Kąt podniesienia ramienia
-        elbow_angle = -np.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
+        shoulder_yaw = np.arctan2(dz, dx)
+        planar_distance = np.sqrt(dx**2 + dz**2)
+        total_distance = np.sqrt(planar_distance**2 + dy**2)
 
-        # Zaktualizuj kąty stawów
-        self.joint_angles[0] = shoulder_pitch
-        self.joint_angles[1] = shoulder_yaw
-        self.joint_angles[2] = elbow_angle
+        cos_elbow = (2 * self.segment_length**2 - total_distance**2) / (2 * self.segment_length**2)
+        if not -1 <= cos_elbow <= 1:
+            print("Błąd geometrii (cos_elbow poza zakresem)")
+            return False
+        elbow_angle = -np.arccos(cos_elbow)
+        shoulder_pitch = np.arctan2(dy, planar_distance) + elbow_angle / 2
 
-        print(f"Robot przemieścił się do pozycji: {target_position}")
+        self.target_joint_angles = [shoulder_pitch, shoulder_yaw, elbow_angle]
+        self.reaching = True
         return True
     
+    def update_motion(self, speed=0.02):
+        if not self.reaching:
+            return
+
+        done = True
+        for i in range(3):
+            diff = self.target_joint_angles[i] - self.joint_angles[i]
+            if abs(diff) > 0.01:
+                self.joint_angles[i] += np.clip(diff, -speed, speed)
+                done = False
+
+        if done:
+            self.reaching = False
+            print("Osiągnięto cel.")
+
     # Obsługa wejścia z klawiatury
     def handle_input(self):
         if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(np.pi / 4): self.joint_angles[0] += 0.02  # Shoulder Pitch (X)
