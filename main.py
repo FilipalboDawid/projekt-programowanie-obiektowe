@@ -27,6 +27,8 @@ robot = RobotArm()
 primitive = Primitive()
 seq_manager = SequenceManager(robot, primitive)
 
+mode = 'free'
+
 # Shader
 shader = rl.load_shader("shadow.vs", "shadow.fs")
 
@@ -43,7 +45,7 @@ target_x_gui = 0.0
 target_y_gui = 0.0
 target_z_gui = 0.0
 target= rl.Vector3(0.0, 0.0, 0.0)
-mode = 'free'
+
 # Pętla główna
 while not rl.window_should_close():
     if rl.is_key_down(rl.KEY_T):
