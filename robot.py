@@ -7,6 +7,7 @@ import numpy as np
 
 # Definicje
 init_angles = [np.deg2rad(25), np.deg2rad(0), np.deg2rad(100)]
+
 # Pomocnicze funkcje wektorowe
 def vec3_add(v1, v2):
     return rl.Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
@@ -66,50 +67,6 @@ class RobotArm:
         self.reaching = False
         self.target_pos = rl.Vector3(0, 0, 0)
         self.interp_alpha = 0.0  # lub 1.0, jeśli wolisz domyślnie "brak interpolacji"
-
-    
-    # Ruch do określonej pozycji (teleportacja)
-    def move_to_position(self, target_position):
-        x, y, z = target_position.x, target_position.y, target_position.z
-    
-        dx = x
-        dy = y - 0.5
-        dz = z
-        distance = np.sqrt(dx**2 + dy**2 + dz**2)
-
-        if distance > 2 * self.segment_length:
-            print("Cel poza zasięgiem!")
-            return False
-
-        shoulder_yaw = np.arctan2(dz, dx)
-        planar_distance = np.sqrt(dx**2 + dz**2)
-        total_distance = np.sqrt(planar_distance**2 + dy**2)
-
-        cos_elbow = (2 * self.segment_length**2 - total_distance**2) / (2 * self.segment_length**2)
-        if not -1 <= cos_elbow <= 1:
-            print("Błąd geometrii (cos_elbow poza zakresem)")
-            return False
-        elbow_angle = -np.arccos(cos_elbow)
-        shoulder_pitch = np.arctan2(dy, planar_distance) #+ elbow_angle / 2
-
-        self.target_joint_angles = [shoulder_pitch, shoulder_yaw, elbow_angle]
-        self.reaching = True
-        return True
-    
-    def update_motion(self, speed=0.02):
-        if not self.reaching:
-            return
-
-        done = True
-        for i in range(3):
-            diff = self.target_joint_angles[i] - self.joint_angles[i]
-            if abs(diff) > 0.01:
-                self.joint_angles[i] += np.clip(diff, -speed, speed)
-                done = False
-
-        if done:
-            self.reaching = False
-            print("Osiągnięto cel.")
 
     # Obsługa wejścia z klawiatury
     def handle_input(self):
@@ -215,6 +172,49 @@ class RobotArm:
 
         return joint2
     
+    # Ruch do określonej pozycji (teleportacja)
+    def move_to_position(self, target_position):
+        x, y, z = target_position.x, target_position.y, target_position.z
+
+        dx = x
+        dy = y - 0.5
+        dz = z
+        distance = np.sqrt(dx**2 + dy**2 + dz**2)
+
+        if distance > 2 * self.segment_length:
+            print("Cel poza zasięgiem!")
+            return False
+
+        shoulder_yaw = np.arctan2(dz, dx)
+        planar_distance = np.sqrt(dx**2 + dz**2)
+        total_distance = np.sqrt(planar_distance**2 + dy**2)
+
+        cos_elbow = (2 * self.segment_length**2 - total_distance**2) / (2 * self.segment_length**2)
+        if not -1 <= cos_elbow <= 1:
+            print("Błąd geometrii (cos_elbow poza zakresem)")
+            return False
+        elbow_angle = np.pi + np.arccos(cos_elbow)
+        shoulder_pitch = elbow_angle / 2 - np.arctan2(dy, planar_distance)
+
+        self.target_joint_angles = [shoulder_pitch, shoulder_yaw, elbow_angle]
+        self.reaching = True
+        return True
+    
+    def update_motion(self, speed=0.02):
+        if not self.reaching:
+            return
+
+        done = True
+        for i in range(3):
+            diff = self.target_joint_angles[i] - self.joint_angles[i]
+            if abs(diff) > 0.01:
+                self.joint_angles[i] += np.clip(diff, -speed, speed)
+                done = False
+
+        if done:
+            self.reaching = False
+            print("Osiągnięto cel.")
+
     # Chwytanie obiektu
     def grasp(self, primitive):
         self.grabbing = True

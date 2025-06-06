@@ -5,6 +5,8 @@ import raylibpy as rl
 from robot import RobotArm
 from primitives import Primitive
 from sequence import SequenceManager
+from camera import Camera
+from utils import distance_vec3
 import numpy as np
 import ctypes
 
@@ -16,18 +18,14 @@ light_dir = (-0.5, -1.0, -0.5)
 light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
 
 # Definicje
-def distance_vec3(a, b):
-    dx = a.x - b.x
-    dy = a.y - b.y
-    dz = a.z - b.z
-    return (dx*dx + dy*dy + dz*dz) ** 0.5
-
-def draw_text_3d(text, position3d, font_size=10, spacing=1, color=rl.BLACK):
-    screen_pos = rl.get_world_to_screen(position3d, camera)
-    rl.draw_text(text, int(screen_pos.x), int(screen_pos.y), font_size, color)
 
 # Inicjalizacja
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
+
+camera = Camera()
+robot = RobotArm()
+primitive = Primitive()
+seq_manager = SequenceManager(robot, primitive)
 
 # Shader
 shader = rl.load_shader("shadow.vs", "shadow.fs")
@@ -36,32 +34,6 @@ light_dir_loc = rl.get_shader_location(shader, b"lightDirection")
 rl.set_shader_value(shader, light_dir_loc, light_dir_ctypes, rl.SHADER_UNIFORM_VEC3)
 
 rl.set_target_fps(60)
-
-camera = rl.Camera3D()
-camera.position = rl.Vector3(5.0, 6.0, 5.0)
-camera.target = rl.Vector3(0.0, 0.0, 0.0)
-camera.up = rl.Vector3(0.0, 1.0, 0.0)
-camera.fovy = 45.0
-camera.projection = rl.CAMERA_PERSPECTIVE
-
-radius = distance_vec3(camera.position, camera.target)
-
-# Obliczanie początkowych yaw i pitch na podstawie pozycji kamery
-offset = rl.vector3_subtract(camera.position, camera.target)
-radius = distance_vec3(camera.position, camera.target)
-
-yaw = np.arctan2(offset.x, offset.z)
-pitch = np.arcsin(offset.y / radius)
-
-is_rotating = False
-start_yaw = yaw
-start_pitch = pitch
-mouse_start = rl.Vector2(0, 0)
-
-
-robot = RobotArm()
-primitive = Primitive()
-seq_manager = SequenceManager(robot, primitive)
 
 show_position_gui = False
 position_gui_message = ""
@@ -81,66 +53,7 @@ while not rl.window_should_close():
     if rl.is_key_down(rl.KEY_F):
         mode = 'free'
 
-    # Obsługa kamery
-    mouse_delta = rl.get_mouse_delta()
-    sensitivity = 0.003
-    pan_speed = 0.01
-
-    # Wektor forward (kierunek patrzenia kamery)
-    forward = rl.vector3_subtract(camera.target, camera.position)
-    forward = rl.vector3_normalize(forward)
-
-    # Wektor right (prostopadły do forward i up)
-    right = rl.vector3_cross_product(forward, camera.up)
-    right = rl.vector3_normalize(right)
-
-    # Obrót kamery LPM
-    # Rozpoczęcie rotacji kamery
-    if rl.is_mouse_button_pressed(rl.MOUSE_BUTTON_LEFT) and rl.is_cursor_on_screen():
-        is_rotating = True
-        radius = distance_vec3(camera.position, camera.target)  # Zapamiętaj aktualny zoom
-
-    # Zakończenie rotacji kamery
-    if rl.is_mouse_button_released(rl.MOUSE_BUTTON_LEFT):
-        is_rotating = False
-
-    # Aktualizacja rotacji kamery
-    if is_rotating and rl.is_cursor_on_screen():
-        yaw += mouse_delta.x * sensitivity
-        pitch -= mouse_delta.y * sensitivity
-        pitch = max(-np.pi / 2 + 0.1, min(np.pi / 2 - 0.1, pitch))
-
-        radius = distance_vec3(camera.position, camera.target)  # dynamiczne
-
-        # Nowa pozycja kamery na podstawie aktualnego zoomu
-        camera.position.x = camera.target.x + radius * np.cos(pitch) * np.sin(yaw)
-        camera.position.y = camera.target.y + radius * np.sin(pitch)
-        camera.position.z = camera.target.z + radius * np.cos(pitch) * np.cos(yaw)
-
-    # Przesuwanie kamery PPM
-    if rl.is_mouse_button_down(rl.MOUSE_BUTTON_RIGHT) and rl.is_cursor_on_screen():
-        dx = -mouse_delta.x * pan_speed
-        dy = mouse_delta.y * pan_speed
-
-        # Ruch lewo/prawo
-        move_right = rl.vector3_scale(right, dx)
-        # Ruch góra/dół
-        move_up = rl.vector3_scale(camera.up, dy)
-
-        move_total = rl.vector3_add(move_right, move_up)
-
-        camera.position = rl.vector3_add(camera.position, move_total)
-        camera.target = rl.vector3_add(camera.target, move_total)
-
-    # Zoom (opcjonalnie: kółko myszy)
-    wheel = rl.get_mouse_wheel_move()
-    if wheel != 0:
-        zoom_amount = wheel * 0.5
-        forward = rl.vector3_subtract(camera.target, camera.position)
-        forward = rl.vector3_normalize(forward)
-        zoom_vector = rl.vector3_scale(forward, zoom_amount)
-        camera.position = rl.vector3_add(camera.position, zoom_vector)
-
+    camera.camera_usage()
     # Obsługa robota
     # Tryb nauki
     if mode == 'teach':
@@ -265,22 +178,20 @@ while not rl.window_should_close():
 
             
 
-    rl.begin_mode3d(camera)
+    rl.begin_mode3d(camera.camera)
     # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
     axis_length = 2
     origin = (0, 0, 0)
 
     # Oś X (czerwona)
     rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
-    draw_text_3d("X", (axis_length + 1, 0, 0), 10, 0.01, rl.RED)
+
 
     # Oś Y (zielona)
     rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
-    draw_text_3d("Y", (0, axis_length + 1, 0), 10, 0.01, rl.GREEN)
 
     # Oś Z (niebieska)
     rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
-    draw_text_3d("Z", (0, 0, axis_length + 1), 10, 0.01, rl.BLUE)
 
     # Rysowanie robota
     rl.begin_shader_mode(shader)
