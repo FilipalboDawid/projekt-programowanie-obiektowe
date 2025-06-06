@@ -1,6 +1,5 @@
 #robot.py
 
-
 # Importy
 import raylibpy as rl
 import numpy as np
