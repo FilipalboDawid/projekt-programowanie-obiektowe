@@ -78,43 +78,46 @@ class RobotArm:
         joint2 = kin["joint2"]
         dir2 = kin["dir2"]
 
-        # Segmenty ramienia
+        # Rysowanie segmentów ramienia
         rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 10, rl.GRAY)
         rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
 
-        # Stawy i podstawa
         rl.draw_sphere(base, 0.2, rl.DARKGRAY)
         rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)
         rl.draw_cylinder_ex([0, 0, 0], base, 0.5, 0.5, 20, rl.DARKGRAY)
 
-        # Chwytak
-        normalized_dir = rl.vector3_normalize(dir2)
-        default_up = rl.Vector3(0, 1, 0)
-        axis = rl.vector3_cross_product(default_up, normalized_dir)
-        dot = rl.vector3_dot_product(default_up, normalized_dir)
-        angle_rad = np.arccos(dot)
-        angle_deg = np.degrees(angle_rad)
+        # Normalizujemy kierunek drugiego segmentu (to kierunek chwytaka)
+        forward = rl.vector3_normalize(dir2)
 
-        if rl.vector3_length(axis) < 0.0001:
-            axis = rl.Vector3(1, 0, 0)
+        # Globalny "up" — wybierzemy taki, żeby nie był prawie równoległy do forward
+        global_up = rl.Vector3(0, 1, 0)
+        dot = rl.vector3_dot_product(forward, global_up)
+        if abs(dot) > 0.99:  # jeśli są niemal równoległe, zmień up
+            global_up = rl.Vector3(0, 0, 1)
 
-        spread = 0.05 if self.grabbing else 0.15
-        default_right = rl.Vector3(0, 1, 0)
-        side_vector = rl.vector3_cross_product(normalized_dir, default_right)
-        if rl.vector3_length(side_vector) < 0.001:
-            side_vector = rl.Vector3(0, 0, 1)
-
+        # Wektor boczny (side_vector) prostopadły do forward i global_up
+        side_vector = rl.vector3_cross_product(forward, global_up)
         side_vector = rl.vector3_normalize(side_vector)
+
+        # Odległość rozwarcia szczypiec
+        spread = 0.05 if self.grabbing else 0.15
+
+        # Pozycje palców — rozstawione na boki względem joint2
         finger1_pos = rl.vector3_add(joint2, rl.vector3_scale(side_vector, spread))
         finger2_pos = rl.vector3_subtract(joint2, rl.vector3_scale(side_vector, spread))
+
+        # Rozmiar palców szczypiec
         finger_size = rl.Vector3(0.05, 0.2, 0.05)
         color = rl.DARKGRAY if self.grabbing else rl.DARKGRAY
 
+        # Rysuj szczypce
         rl.draw_cube(finger1_pos, finger_size.x, finger_size.y, finger_size.z, color)
         rl.draw_cube(finger2_pos, finger_size.x, finger_size.y, finger_size.z, color)
 
+        # Aktualizacja pozycji chwytanego obiektu
         if self.grabbing and self.grabbed_object:
             self.grabbed_object.position = joint2
+
 
     # Pobranie pozycji końcówki ramienia robota
     def get_end_effector_pos(self):
