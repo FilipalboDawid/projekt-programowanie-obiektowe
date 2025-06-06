@@ -137,7 +137,7 @@ while not rl.window_should_close():
 
     # Wyświetlanie informacji na ekranie
     lines = [
-        f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Move to(only in Free/Teach)",
+        f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Move to (only in Free/Teach)",
         "A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch",
         f"Joint Angles: {degrees}",
         f"End Effector Position: {robot.get_end_effector_pos()}",
