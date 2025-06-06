@@ -70,7 +70,7 @@ input_str = {'x': '', 'y': '', 'z': ''}
 target_x_gui = 0.0
 target_y_gui = 0.0
 target_z_gui = 0.0
-
+target= rl.Vector3(0.0, 0.0, 0.0)
 mode = 'free'
 # Pętla główna
 while not rl.window_should_close():
@@ -309,6 +309,7 @@ while not rl.window_should_close():
     rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 100, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 130, 20, rl.DARKGRAY)
+    rl.draw_text(f"Target location: {target}", 10, 160, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()
