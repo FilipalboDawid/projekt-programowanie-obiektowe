@@ -7,6 +7,7 @@ from primitives import Primitive
 from sequence import SequenceManager
 from camera import Camera
 from utils import distance_vec3
+from gui import PositionGUI
 import numpy as np
 import ctypes
 
@@ -26,6 +27,7 @@ camera = Camera()
 robot = RobotArm()
 primitive = Primitive()
 seq_manager = SequenceManager(robot, primitive)
+gui = PositionGUI(robot)
 
 mode = 'free'
 
@@ -76,11 +78,7 @@ while not rl.window_should_close():
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
         if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
-            show_position_gui = not show_position_gui
-            input_str['x'] = ''
-            input_str['y'] = ''
-            input_str['z'] = ''
-            input_field = 'x'
+            gui.toggle()
     # Tryb odtwarzania ruchów
     elif mode == 'play':
         if seq_manager.frames == []:
@@ -104,11 +102,7 @@ while not rl.window_should_close():
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
         if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
-            show_position_gui = not show_position_gui
-            input_str['x'] = ''
-            input_str['y'] = ''
-            input_str['z'] = ''
-            input_field = 'x'
+            gui.toggle()
 
     # Aktualizacja ruchu robota
     robot.update_motion()
@@ -117,69 +111,9 @@ while not rl.window_should_close():
 
     rl.clear_background(rl.RAYWHITE)
 
-    if show_position_gui:
-        gui_x, gui_y = 20, 200
-
-        rl.draw_rectangle(gui_x - 10, gui_y - 10, 400, 250, rl.fade(rl.LIGHTGRAY, 0.9))
-        rl.draw_text("Set grabber position", gui_x, gui_y, 20, rl.DARKGRAY)
-        rl.draw_text("TAB - next coordinate", gui_x , gui_y+20, 20, rl.DARKGRAY)
-        # rl.draw_text("BACKSPACE - clear last", gui_x, gui_y + 40, 20, rl.DARKGRAY)
-        rl.draw_text(position_gui_message, gui_x, gui_y + 20, 20, rl.RED)
-        # Pola tekstowe
-        for i, axis in enumerate(['x', 'y', 'z']):
-            y_offset = gui_y + 40 + i * 50
-            color = rl.RED if input_field == axis else rl.BLACK
-            rl.draw_text(f"{axis.upper()}: {input_str[axis]}", gui_x, y_offset, 30, color)
-            rl.draw_rectangle(gui_x, y_offset + 30, 280, 2, rl.GRAY)
-
-        # Przycisk PRZENIEŚ
-        button_bounds = rl.Rectangle(gui_x, gui_y + 200, 200, 30)
-        rl.draw_rectangle_rec(button_bounds, rl.DARKGREEN)
-        rl.draw_text("ENTER - MOVE", int(gui_x + 10), int(gui_y + 205), 20, rl.WHITE)
-
-        if rl.is_mouse_button_pressed(rl.MOUSE_LEFT_BUTTON) and rl.check_collision_point_rec(rl.get_mouse_position(), button_bounds):
-            try:
-                target_x_gui = float(input_str['x'])
-                target_y_gui = float(input_str['y'])
-                target_z_gui = float(input_str['z'])
-                target = rl.Vector3(target_x_gui, target_y_gui, target_z_gui)
-                success = robot.move_to_position(target)
-                if success:
-                    show_position_gui = False
-                    position_gui_message = ""
-                else:
-                    position_gui_message = "Nie można przenieść ramienia – poza zasięgiem!"
-            except ValueError:
-                print("Nieprawidłowe wartości XYZ!")
-
-        # Obsługa klawiatury
-        key = rl.get_key_pressed()
-        if rl.is_key_pressed(rl.KEY_TAB):
-            input_field = {'x': 'y', 'y': 'z', 'z': 'x'}[input_field]
-        elif rl.is_key_pressed(rl.KEY_ENTER):
-            try:
-                target_x_gui = float(input_str['x'])
-                target_y_gui = float(input_str['y'])
-                target_z_gui = float(input_str['z'])
-                target = rl.Vector3(target_x_gui, target_y_gui, target_z_gui)
-                success = robot.move_to_position(target)
-                if success:
-                    show_position_gui = False
-                    position_gui_message = ""
-                else:
-                    position_gui_message = "Nie można przenieść ramienia – poza zasięgiem!"
-            except ValueError:
-                print("Nieprawidłowe wartości XYZ!")
-        elif rl.is_key_pressed(rl.KEY_ESCAPE):
-            show_position_gui = False
-        elif key >= 32 and key <= 125:
-            input_str[input_field] += chr(key)
-        elif rl.is_key_pressed(rl.KEY_BACKSPACE):
-            if len(input_str[input_field]) > 0:
-                input_str[input_field] = input_str[input_field][:-1]
-
-            
-
+    gui.update()
+    gui.draw()
+    
     rl.begin_mode3d(camera.camera)
     # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
     axis_length = 2
