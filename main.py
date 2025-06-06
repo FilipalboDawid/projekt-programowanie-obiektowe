@@ -136,12 +136,21 @@ while not rl.window_should_close():
     degrees = np.degrees(robot.joint_angles)
 
     # Wyświetlanie informacji na ekranie
-    rl.draw_text(f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Give coordinates", 10, 10, 20, rl.DARKGRAY)
-    rl.draw_text(f"Joint Angles: {degrees}", 10, 40, 20, rl.DARKGRAY)
-    rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 70, 20, rl.DARKGRAY)
-    rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 100, 20, rl.DARKGRAY)
-    rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 130, 20, rl.DARKGRAY)
-    rl.draw_text(f"Target location: {gui.target}", 10, 160, 20, rl.DARKGRAY)
+    lines = [
+        f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Move to(only in Free/Teach)",
+        "A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch",
+        f"Joint Angles: {degrees}",
+        f"End Effector Position: {robot.get_end_effector_pos()}",
+        # f"Target location: {gui.target}",
+    ]
+
+    text_pos = 10
+    line_spacing = 30
+    font_size = 20
+    color = rl.DARKGRAY
+
+    for i, line in enumerate(lines):
+        rl.draw_text(line, 10, text_pos + i * line_spacing, font_size, color)
     rl.end_drawing()
 
 rl.close_window()
