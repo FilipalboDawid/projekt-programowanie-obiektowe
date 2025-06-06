@@ -11,17 +11,14 @@ from gui import PositionGUI
 import numpy as np
 import ctypes
 
-
-# Stałe
+# Inicjalizacja
 WIDTH, HEIGHT = 1600, 900
+rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
+rl.set_target_fps(60)
+mode = 'free'
 
 light_dir = (-0.5, -1.0, -0.5)
 light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
-
-# Definicje
-
-# Inicjalizacja
-rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
 
 camera = Camera()
 robot = RobotArm()
@@ -29,24 +26,11 @@ primitive = Primitive()
 seq_manager = SequenceManager(robot, primitive)
 gui = PositionGUI(robot)
 
-mode = 'free'
-
 # Shader
 shader = rl.load_shader("shadow.vs", "shadow.fs")
 
 light_dir_loc = rl.get_shader_location(shader, b"lightDirection")
 rl.set_shader_value(shader, light_dir_loc, light_dir_ctypes, rl.SHADER_UNIFORM_VEC3)
-
-rl.set_target_fps(60)
-
-show_position_gui = False
-position_gui_message = ""
-input_field = 'x'  # aktywne pole: 'x', 'y', 'z'
-input_str = {'x': '', 'y': '', 'z': ''}
-target_x_gui = 0.0
-target_y_gui = 0.0
-target_z_gui = 0.0
-target= rl.Vector3(0.0, 0.0, 0.0)
 
 # Pętla główna
 while not rl.window_should_close():
@@ -106,6 +90,7 @@ while not rl.window_should_close():
 
     # Aktualizacja ruchu robota
     robot.update_motion()
+    
     # Rysowanie
     rl.begin_drawing()
 
@@ -113,15 +98,15 @@ while not rl.window_should_close():
 
     gui.update()
     gui.draw()
-    
+
     rl.begin_mode3d(camera.camera)
+    
     # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
     axis_length = 2
     origin = (0, 0, 0)
 
     # Oś X (czerwona)
     rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
-
 
     # Oś Y (zielona)
     rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
@@ -156,7 +141,7 @@ while not rl.window_should_close():
     rl.draw_text(f"End Effector Position: {robot.get_end_effector_pos()}", 10, 70, 20, rl.DARKGRAY)
     rl.draw_text(f"Grabbing: {robot.grabbing}", 10, 100, 20, rl.DARKGRAY)
     rl.draw_text(f"A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch", 10, 130, 20, rl.DARKGRAY)
-    rl.draw_text(f"Target location: {target}", 10, 160, 20, rl.DARKGRAY)
+    rl.draw_text(f"Target location: {gui.target}", 10, 160, 20, rl.DARKGRAY)
     rl.end_drawing()
 
 rl.close_window()
