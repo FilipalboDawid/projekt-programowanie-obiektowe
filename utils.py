@@ -115,3 +115,28 @@ def compute_inverse_kinematics_dh(x, y, z, L1, L2, L3):
             solutions.append((t2, t1, t3))
 
     return solutions
+
+def filter_solutions_by_limits(solutions, current_angles):
+    # Limity takie jak w handle_input (w radianach)
+    pitch_min, pitch_max = np.deg2rad(40), np.deg2rad(120)
+    yaw_min, yaw_max = -np.deg2rad(175), np.deg2rad(175)
+    elbow_min, elbow_max = -np.deg2rad(150), 0
+
+    valid_solutions = []
+
+    for sol in solutions:
+        pitch, yaw, elbow = sol
+        if pitch_min <= pitch <= pitch_max and \
+           yaw_min <= yaw <= yaw_max and \
+           elbow_min <= elbow <= elbow_max:
+            valid_solutions.append(sol)
+
+    if not valid_solutions:
+        return None
+
+    # Wybierz rozwiązanie najbliższe obecnym kątom
+    def angle_distance(a1, a2):
+        return sum(abs(x - y) for x, y in zip(a1, a2))
+
+    best = min(valid_solutions, key=lambda s: angle_distance(s, current_angles))
+    return best
