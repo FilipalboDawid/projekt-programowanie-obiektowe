@@ -115,7 +115,7 @@ class RobotArm:
         joint3 = kin["joint3"]
 
         # Rysowanie segmentów ramienia (3 segmenty):
-        rl.draw_cylinder_ex(base, joint1, 0.5, 0.5, 10, rl.GRAY)
+        rl.draw_cylinder_ex(base, joint1, 0.5, 0.5, 40, rl.GRAY)
         rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
         rl.draw_cylinder_ex(joint2, joint3, 0.1, 0.1, 10, rl.GRAY)
 
