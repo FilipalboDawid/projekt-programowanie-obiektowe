@@ -3,7 +3,7 @@
 # Importy
 import raylibpy as rl
 import numpy as np
-from utils import rotation_x, rotation_y, rotation_z, apply_rotation, vec3_add, vec3_scale, dh_transform, rot_y, dh_link, to_vec3, compute_inverse_kinematics_dh, filter_solutions_by_limits
+from utils import to_vec3, compute_inverse_kinematics_dh, filter_solutions_by_limits
 
 # Definicje
 init_angles = [np.deg2rad(65), np.deg2rad(0), np.deg2rad(-100)]
