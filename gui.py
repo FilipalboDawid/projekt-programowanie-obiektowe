@@ -1,6 +1,7 @@
 # gui.py
 
 import raylibpy as rl
+import numpy as np
 from primitives import Primitive
 
 primitive = Primitive()
@@ -15,11 +16,45 @@ class PositionGUI:
         self.target = rl.Vector3(0.0, 0.0, 0.0)
         self.just_opened = False
 
-    def toggle(self):
-        self.show = not self.show
-        self.input_str = {'x': '', 'y': '', 'z': ''}
-        self.input_field = 'x'
-        self.just_opened = True  # Zignoruj pierwszy klawisz po otwarciu
+        self.info_mode = ""
+        self.info_joint_angles = None
+        self.info_end_effector_pos = None
+        self.info_target_pos = None
+        self.info_error_message = ""
+
+    def set_info(self, mode, joint_angles, end_effector_pos, target_pos, error_message):
+        self.info_mode = mode
+        self.info_joint_angles = joint_angles
+        self.info_end_effector_pos = end_effector_pos
+        self.info_target_pos = target_pos
+        self.info_error_message = error_message
+
+    def draw_info(self):
+        base_x = 10
+        base_y = 10
+        line_spacing = 30
+        font_size = 20
+        color = rl.DARKGRAY
+
+        lines = [
+            f"Mode: {self.info_mode.upper()} (T/P/F) | G: Grab | R: Release | M: Move to (only in Free/Teach)",
+            "A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch",
+            f"Joint Angles: {np.array2string(self.info_joint_angles, precision=1, separator=', ')}",
+            f"End Effector Position: ({self.info_end_effector_pos.x:.2f}, {self.info_end_effector_pos.y:.2f}, {self.info_end_effector_pos.z:.2f})",
+            f"Target location: ({self.info_target_pos.x:.2f}, {self.info_target_pos.y:.2f}, {self.info_target_pos.z:.2f})",
+        ]
+
+        for i, line in enumerate(lines):
+            rl.draw_text(line, base_x, base_y + i * line_spacing, font_size, color)
+
+        if self.info_error_message:
+            rl.draw_text(self.info_error_message, base_x, base_y + len(lines)*line_spacing, font_size, rl.RED)
+
+        def toggle(self):
+            self.show = not self.show
+            self.input_str = {'x': '', 'y': '', 'z': ''}
+            self.input_field = 'x'
+            self.just_opened = True  # Zignoruj pierwszy klawisz po otwarciu
 
     def update(self):
         if not self.show:
@@ -51,7 +86,7 @@ class PositionGUI:
                 'z': str(primitive.position.z)
             }
             self.target = rl.Vector3(primitive.position.x, primitive.position.y, primitive.position.z)
-            self.message = "Position set to object position!"
+            self.message = "Position set to object position."
 
     def try_move(self):
         try:
@@ -64,16 +99,22 @@ class PositionGUI:
                 self.show = False
                 self.message = ""
             else:
-                self.message = "Cannot move to this position!"
+                self.message = "Cannot move to this position."
         except ValueError:
-            self.message = "Invalid input! Please enter valid numbers."
+            self.message = "Invalid input. Please enter valid numbers."
+
+    def toggle(self):
+        self.show = not self.show
+        self.input_str = {'x': '', 'y': '', 'z': ''}
+        self.input_field = 'x'
+        self.just_opened = True  # Zignoruj pierwszy klawisz po otwarciu
 
     def draw(self):
         if not self.show:
             return
 
         gui_x, gui_y = 20, 200
-        rl.draw_rectangle(gui_x - 10, gui_y - 10, 400, 400, rl.fade(rl.LIGHTGRAY, 0.9))
+        rl.draw_rectangle(gui_x - 10, gui_y - 10, 500, 300, rl.fade(rl.LIGHTGRAY, 0.9))
         rl.draw_text("Set grabber position", gui_x, gui_y, 20, rl.DARKGRAY)
         rl.draw_text("TAB - next coordinate", gui_x , gui_y+20, 20, rl.DARKGRAY)
         rl.draw_text("L_ALT - close GUI", gui_x, gui_y + 40, 20, rl.DARKGRAY)
@@ -84,7 +125,7 @@ class PositionGUI:
             y_offset = gui_y + 100 + i * 40
             color = rl.RED if self.input_field == axis else rl.BLACK
             rl.draw_text(f"{axis.upper()}: {self.input_str[axis]}", gui_x, y_offset, 30, color)
-            rl.draw_rectangle(gui_x, y_offset + 30, 280, 2, rl.GRAY)
+            rl.draw_rectangle(gui_x, y_offset + 30, 150, 2, rl.GRAY)
 
         button_bounds = rl.Rectangle(gui_x, gui_y + 250, 200, 30)
         rl.draw_rectangle_rec(button_bounds, rl.DARKGREEN)

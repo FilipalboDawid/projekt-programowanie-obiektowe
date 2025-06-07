@@ -103,20 +103,20 @@ while not rl.window_should_close():
     gui.draw()
 
     rl.begin_mode3d(camera.camera)
-    """Osie do wykasowania, na razie są *sparkles*developer tool*sparkles*"""
-    # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
-    axis_length = 2
-    origin = (0, 0, 0)
+    # Osie do wykasowania, na razie są *sparkles*developer tool*sparkles*
+    # # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
+    # axis_length = 2
+    # origin = (0, 0, 0)
 
-    # Oś X (czerwona)
-    rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
+    # # Oś X (czerwona)
+    # rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
 
-    # Oś Y (zielona)
-    rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
+    # # Oś Y (zielona)
+    # rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
 
-    # Oś Z (niebieska)
-    rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
-
+    # # Oś Z (niebieska)
+    # rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
+    
     # Rysowanie robota
     rl.begin_shader_mode(shader)
     robot.draw()  # lub ręczne rysowanie segmentów
@@ -139,24 +139,14 @@ while not rl.window_should_close():
     degrees = np.degrees(robot.joint_angles)
 
     # Wyświetlanie informacji na ekranie
-    lines = [
-        f"Mode: {mode.upper()} (T/P/F) | G: Grab | R: Release | M: Move to (only in Free/Teach)",
-        "A,D - Shoulder yaw; W,S - Shoulder pitch, UP, DOWN - Elbow pitch",
-        f"Joint Angles: {degrees}",
-        f"End Effector Position: {robot.get_end_effector_pos()}",
-        # f"Target location: {gui.target}",
-    ]
-
-    text_pos = 10
-    line_spacing = 30
-    font_size = 20
-    color = rl.DARKGRAY
-
-    for i, line in enumerate(lines):
-        rl.draw_text(line, 10, text_pos + i * line_spacing, font_size, color)
-
-    if error_message:
-        rl.draw_text(error_message, 10, 150, 20, rl.RED)
+    gui.set_info(
+        mode=mode,
+        joint_angles=degrees,
+        end_effector_pos=robot.get_end_effector_pos(),
+        target_pos=gui.target,
+        error_message=error_message
+    )
+    gui.draw_info()
 
     rl.end_drawing()
 
