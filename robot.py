@@ -3,7 +3,7 @@
 # Importy
 import raylibpy as rl
 import numpy as np
-from utils import rotation_x, rotation_y, rotation_z, apply_rotation, vec3_add, vec3_scale, dh_transform, rot_y, dh_link, to_vec3, within_limits
+from utils import rotation_x, rotation_y, rotation_z, apply_rotation, vec3_add, vec3_scale, dh_transform, rot_y, dh_link, to_vec3, compute_inverse_kinematics_dh
 
 # Definicje
 init_angles = [np.deg2rad(65), np.deg2rad(0), np.deg2rad(-100)]
@@ -19,40 +19,6 @@ def calculate_shading(light_direction, normal):
     base_color = rl.GRAY
     shaded_color = rl.color_from_normalized(intensity * rl.color_to_normalized(base_color))
     return shaded_color
-
-def compute_inverse_kinematics_dh(x, y, z, L1, L2, L3):
-    solutions = []
-
-    # dwie opcje dla theta1
-    theta1_options = [np.arctan2(z, x), np.arctan2(-z, -x)]
-
-    for theta1 in theta1_options:
-        r = np.sqrt(x**2 + z**2)
-        s = y - L1
-
-        D = (r**2 + s**2 - L2**2 - L3**2) / (2 * L2 * L3)
-        if abs(D) > 1:
-            continue  # brak rozwiązania w tym układzie
-
-        # dwie opcje dla theta3
-        for sign in [+1, -1]:
-            theta3 = np.arctan2(sign * np.sqrt(1 - D**2), D)
-
-            phi = np.arctan2(s, r)
-            psi = np.arctan2(L3 * np.sin(theta3), L2 + L3 * np.cos(theta3))
-            theta2 = phi - psi
-
-            # Normalizacja kątów
-            def normalize(angle):
-                return np.arctan2(np.sin(angle), np.cos(angle))
-
-            t1 = normalize(theta1)
-            t2 = normalize(theta2)
-            t3 = normalize(theta3)
-
-            solutions.append((t2, t1, t3))
-
-    return solutions
 
 # Klasa RobotArm
 class RobotArm:

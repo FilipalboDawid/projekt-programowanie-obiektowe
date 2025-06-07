@@ -82,12 +82,36 @@ def dh_link(a, theta):
 def to_vec3(arr):
         return rl.Vector3(arr[0], arr[1], arr[2])
 
-def within_limits(joint_angles):
-    pitch, yaw, elbow = joint_angles
-    if not (np.deg2rad(40) <= pitch <= np.deg2rad(120)):
-        return False
-    if not (-np.deg2rad(175) <= yaw <= np.deg2rad(175)):
-        return False
-    if not (-np.deg2rad(150) <= elbow <= 0):
-        return False
-    return True
+def compute_inverse_kinematics_dh(x, y, z, L1, L2, L3):
+    solutions = []
+
+    # dwie opcje dla theta1
+    theta1_options = [np.arctan2(z, x), np.arctan2(-z, -x)]
+
+    for theta1 in theta1_options:
+        r = np.sqrt(x**2 + z**2)
+        s = y - L1
+
+        D = (r**2 + s**2 - L2**2 - L3**2) / (2 * L2 * L3)
+        if abs(D) > 1:
+            continue  # brak rozwiązania w tym układzie
+
+        # dwie opcje dla theta3
+        for sign in [+1, -1]:
+            theta3 = np.arctan2(sign * np.sqrt(1 - D**2), D)
+
+            phi = np.arctan2(s, r)
+            psi = np.arctan2(L3 * np.sin(theta3), L2 + L3 * np.cos(theta3))
+            theta2 = phi - psi
+
+            # Normalizacja kątów
+            def normalize(angle):
+                return np.arctan2(np.sin(angle), np.cos(angle))
+
+            t1 = normalize(theta1)
+            t2 = normalize(theta2)
+            t3 = normalize(theta3)
+
+            solutions.append((t2, t1, t3))
+
+    return solutions
