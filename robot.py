@@ -6,7 +6,7 @@ import numpy as np
 from utils import rotation_x, rotation_y, rotation_z, apply_rotation, vec3_add, vec3_scale, dh_transform, rot_y, dh_link, to_vec3
 
 # Definicje
-init_angles = [np.deg2rad(50), np.deg2rad(0), np.deg2rad(0)]
+init_angles = [np.deg2rad(65), np.deg2rad(0), np.deg2rad(-100)]
 
 # Obliczanie cienia
 def calculate_shading(light_direction, normal):
@@ -19,6 +19,40 @@ def calculate_shading(light_direction, normal):
     base_color = rl.GRAY
     shaded_color = rl.color_from_normalized(intensity * rl.color_to_normalized(base_color))
     return shaded_color
+
+def compute_inverse_kinematics_dh(x, y, z, L1, L2, L3):
+    solutions = []
+
+    # dwie opcje dla theta1
+    theta1_options = [np.arctan2(z, x), np.arctan2(-z, -x)]
+
+    for theta1 in theta1_options:
+        r = np.sqrt(x**2 + z**2)
+        s = y - L1
+
+        D = (r**2 + s**2 - L2**2 - L3**2) / (2 * L2 * L3)
+        if abs(D) > 1:
+            continue  # brak rozwiązania w tym układzie
+
+        # dwie opcje dla theta3
+        for sign in [+1, -1]:
+            theta3 = np.arctan2(sign * np.sqrt(1 - D**2), D)
+
+            phi = np.arctan2(s, r)
+            psi = np.arctan2(L3 * np.sin(theta3), L2 + L3 * np.cos(theta3))
+            theta2 = phi - psi
+
+            # Normalizacja kątów
+            def normalize(angle):
+                return np.arctan2(np.sin(angle), np.cos(angle))
+
+            t1 = normalize(theta1)
+            t2 = normalize(theta2)
+            t3 = normalize(theta3)
+
+            solutions.append((t2, t1, t3))
+
+    return solutions
 
 # Klasa RobotArm
 class RobotArm:
@@ -60,35 +94,46 @@ class RobotArm:
 
     # Rysowanie ramienia robota
     def compute_forward_kinematics(self):
-        a = self.segment_length
-        theta_pitch = self.joint_angles[0]  # shoulder_pitch
-        theta_elbow = self.joint_angles[2]  # elbow
-        shoulder_yaw = self.joint_angles[1] # shoulder_yaw
+        theta1 = self.joint_angles[1]  # yaw
+        theta2 = self.joint_angles[0]  # pitch
+        theta3 = self.joint_angles[2]  # elbow
 
-        # Transformacja podstawowa - przesunięcie bazy do (0, 0.5, 0)
-        base_translation = np.array([
-            [1, 0, 0, 0],
-            [0, 1, 0, 0.5],
+        L1 = 0.5
+        L2 = self.segment_length
+        L3 = self.segment_length
+
+        # DH: Z0→Z1 (obrót yaw wokół Y, baza w górę Y)
+        T0_1 = np.array([
+            [np.cos(theta1), 0, np.sin(theta1), 0],
+            [0, 1, 0, L1],
+            [-np.sin(theta1), 0, np.cos(theta1), 0],
+            [0, 0, 0, 1]
+        ])
+
+        # DH: Z1→Z2 (pitch)
+        T1_2 = np.array([
+            [np.cos(theta2), -np.sin(theta2), 0, L2 * np.cos(theta2)],
+            [np.sin(theta2), np.cos(theta2),  0, L2 * np.sin(theta2)],
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ])
 
-        # Składamy macierze:
-        T_base = base_translation
-        T_yaw = rot_y(shoulder_yaw)
-        T_pitch = dh_link(a, theta_pitch)
-        T_elbow = dh_link(a, theta_elbow)
+        # DH: Z2→Z3 (elbow)
+        T2_3 = np.array([
+            [np.cos(theta3), -np.sin(theta3), 0, L3 * np.cos(theta3)],
+            [np.sin(theta3), np.cos(theta3),  0, L3 * np.sin(theta3)],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])
 
-        T0_1 = T_base @ T_yaw
-        T0_2 = T0_1 @ T_pitch
-        T0_3 = T0_2 @ T_elbow
+        T0_2 = T0_1 @ T1_2
+        T0_3 = T0_2 @ T2_3
 
-        # Pozycje punktów w przestrzeni bazowej
-        
-        base = rl.Vector3(0, 0.5, 0)
-        joint1 = to_vec3(T0_1 @ np.array([0,0,0,1]))
-        joint2 = to_vec3(T0_2 @ np.array([0,0,0,1]))
-        joint3 = to_vec3(T0_3 @ np.array([0,0,0,1]))
+        # Punkty
+        base = rl.Vector3(0, 0, 0)
+        joint1 = to_vec3(T0_1 @ np.array([0, 0, 0, 1]))
+        joint2 = to_vec3(T0_2 @ np.array([0, 0, 0, 1]))
+        joint3 = to_vec3(T0_3 @ np.array([0, 0, 0, 1]))
 
         return {
             "base": base,
@@ -108,13 +153,13 @@ class RobotArm:
         joint3 = kin["joint3"]
 
         # Rysowanie segmentów ramienia (3 segmenty):
-        rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 10, rl.GRAY)
+        rl.draw_cylinder_ex(base, joint1, 0.5, 0.5, 10, rl.GRAY)
         rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
         rl.draw_cylinder_ex(joint2, joint3, 0.1, 0.1, 10, rl.GRAY)
 
         # Rysowanie stawów
-        rl.draw_sphere(base, 0.2, rl.DARKGRAY)
         rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)
+        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
         rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
 
         # Podstawa (np. cylinder od zera do bazy)
@@ -162,55 +207,33 @@ class RobotArm:
     def get_end_effector_pos(self):
         kin = self.compute_forward_kinematics()
         return kin["joint3"]
-    
-    # Ruch do określonej pozycji (teleportacja)
-    def compute_inverse_kinematics(self, target_pos: rl.Vector3):
-        """
-        Oblicz odwrotną kinematykę metodą DH dla 3DOF ramienia (shoulder_pitch, shoulder_yaw, elbow).
-        target_pos - zadana pozycja końcówki ramienia (Vector3).
-        Zwraca: tuple (success: bool, angles: list of 3 angles w radianach)
-        """
-
-        x = target_pos.x
-        y = target_pos.y - 0.5  # baza jest na wysokości 0.5
-        z = target_pos.z
-
-        shoulder_yaw = np.arctan2(z, x)
-        planar_dist = np.sqrt(x**2 + z**2)
-        total_dist = np.sqrt(planar_dist**2 + y**2)
-
-        L = self.segment_length
-
-        if total_dist > 2 * L:
-            return False, [0, 0, 0]
-
-        cos_elbow = (2 * L**2 - total_dist**2) / (2 * L**2)
-
-        if cos_elbow < -1 or cos_elbow > 1:
-            return False, [0, 0, 0]
-
-        elbow_angle = np.pi + np.arccos(cos_elbow)
-
-        k1 = L + L * np.cos(elbow_angle)
-        k2 = L * np.sin(elbow_angle)
-        shoulder_pitch = np.arctan2(y, planar_dist) - np.arctan2(k2, k1)
-
-        shoulder_pitch = np.clip(shoulder_pitch, np.deg2rad(40), np.deg2rad(120))
-        shoulder_yaw = np.clip(shoulder_yaw, -np.deg2rad(175), np.deg2rad(175))
-        elbow_angle = np.clip(elbow_angle - np.pi, -np.deg2rad(150), 0)
-
-        print(f"IK Debug: target=({x:.2f},{y+0.5:.2f},{z:.2f}), angles=({np.rad2deg(shoulder_pitch):.1f},{np.rad2deg(shoulder_yaw):.1f},{np.rad2deg(elbow_angle):.1f})")
-
-        return True, [shoulder_pitch, shoulder_yaw, elbow_angle]
 
     def move_to_position(self, target_position):
-        success, angles = self.compute_inverse_kinematics(target_position)
-        if not success:
-            print("Cel poza zasięgiem lub nieosiągalny.")
+        solutions = compute_inverse_kinematics_dh(target_position.x, target_position.y, target_position.z, 0.5, self.segment_length, self.segment_length)
+        if not solutions:
+            print("Brak rozwiązań odwrotnej kinematyki")
             return False
 
-        self.target_joint_angles = angles
+        def end_effector_error(joint_angles):
+            backup = self.joint_angles.copy()
+            self.joint_angles = joint_angles
+            end_pos = self.get_end_effector_pos()
+            self.joint_angles = backup
+            dx = end_pos.x - target_position.x
+            dy = end_pos.y - target_position.y
+            dz = end_pos.z - target_position.z
+            return dx**2 + dy**2 + dz**2
+
+        best_solution = min(solutions, key=end_effector_error)
+        self.target_joint_angles = best_solution
         self.reaching = True
+
+        for i, sol in enumerate(solutions):
+            deg = np.rad2deg(sol)
+            print(f"Rozwiązanie {i+1}: pitch={deg[0]:.1f}, yaw={deg[1]:.1f}, elbow={deg[2]:.1f}")
+        print("Wybrane kąty:", np.rad2deg(self.target_joint_angles))
+        print("Docelowa pozycja:", target_position)
+
         return True
     
     def update_motion(self, speed=0.02):
