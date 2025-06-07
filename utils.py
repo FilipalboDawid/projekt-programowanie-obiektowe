@@ -81,3 +81,13 @@ def dh_link(a, theta):
 
 def to_vec3(arr):
         return rl.Vector3(arr[0], arr[1], arr[2])
+
+def within_limits(joint_angles):
+    pitch, yaw, elbow = joint_angles
+    if not (np.deg2rad(40) <= pitch <= np.deg2rad(120)):
+        return False
+    if not (-np.deg2rad(175) <= yaw <= np.deg2rad(175)):
+        return False
+    if not (-np.deg2rad(150) <= elbow <= 0):
+        return False
+    return True

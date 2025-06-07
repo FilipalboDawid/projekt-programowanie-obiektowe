@@ -3,7 +3,7 @@
 # Importy
 import raylibpy as rl
 import numpy as np
-from utils import rotation_x, rotation_y, rotation_z, apply_rotation, vec3_add, vec3_scale, dh_transform, rot_y, dh_link, to_vec3
+from utils import rotation_x, rotation_y, rotation_z, apply_rotation, vec3_add, vec3_scale, dh_transform, rot_y, dh_link, to_vec3, within_limits
 
 # Definicje
 init_angles = [np.deg2rad(65), np.deg2rad(0), np.deg2rad(-100)]
@@ -214,6 +214,22 @@ class RobotArm:
             print("Brak rozwiązań odwrotnej kinematyki")
             return False
 
+        def within_limits(joint_angles):
+            pitch, yaw, elbow = joint_angles
+            if not (np.deg2rad(40) <= pitch <= np.deg2rad(120)):
+                return False
+            if not (-np.deg2rad(175) <= yaw <= np.deg2rad(175)):
+                return False
+            if not (-np.deg2rad(150) <= elbow <= 0):
+                return False
+            return True
+
+        valid_solutions = [sol for sol in solutions if within_limits(sol)]
+
+        if not valid_solutions:
+            print("Brak rozwiązań w zadanym zakresie kątów")
+            return False
+
         def end_effector_error(joint_angles):
             backup = self.joint_angles.copy()
             self.joint_angles = joint_angles
@@ -224,11 +240,11 @@ class RobotArm:
             dz = end_pos.z - target_position.z
             return dx**2 + dy**2 + dz**2
 
-        best_solution = min(solutions, key=end_effector_error)
+        best_solution = min(valid_solutions, key=end_effector_error)
         self.target_joint_angles = best_solution
         self.reaching = True
 
-        for i, sol in enumerate(solutions):
+        for i, sol in enumerate(valid_solutions):
             deg = np.rad2deg(sol)
             print(f"Rozwiązanie {i+1}: pitch={deg[0]:.1f}, yaw={deg[1]:.1f}, elbow={deg[2]:.1f}")
         print("Wybrane kąty:", np.rad2deg(self.target_joint_angles))
