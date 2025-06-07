@@ -16,6 +16,7 @@ WIDTH, HEIGHT = 1600, 900
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
 rl.set_target_fps(60)
 mode = 'free'
+error_message = ""
 
 light_dir = (-0.5, -1.0, -0.5)
 light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
@@ -52,13 +53,14 @@ while not rl.window_should_close():
             obj_pos = primitive.position
 
             if distance_vec3(end_pos, obj_pos) < primitive.radius:
-                if robot.grabbing == False:
+                if not robot.grabbing:
                     robot.grasp(primitive)
+                    error_message = ""  # Błąd rozwiązany — resetujemy komunikat
                 else:
-                    print("Chwytak jest zamknięty, nie można chwycić.")
+                    error_message = "Can't grab - grabber closed."
             else:
                 robot.grasp(None)
-                print("Za daleko od obiektu, nie można chwycić.")
+                error_message = "Can't grab - too far."
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
         if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
@@ -66,7 +68,7 @@ while not rl.window_should_close():
     # Tryb odtwarzania ruchów
     elif mode == 'play':
         if seq_manager.frames == []:
-            rl.draw_text(f"Nie nagrano zadnych ruchow. Przelacz sie na tryb nauki (T), aby nagrac sekwencje.", 10, 150, 20, rl.DARKGRAY)
+            rl.draw_text(f"No moves were taught. Press (T) to go into Teach mode", 10, 150, 20, rl.DARKGRAY)
         else:
             seq_manager.playback()
     # Tryb swobodny
@@ -76,13 +78,14 @@ while not rl.window_should_close():
             end_pos = robot.get_end_effector_pos()
             obj_pos = primitive.position
             if distance_vec3(end_pos, obj_pos) < primitive.radius:
-                if robot.grabbing == False:
+                if not robot.grabbing:
                     robot.grasp(primitive)
+                    error_message = ""  # Błąd rozwiązany — resetujemy komunikat
                 else:
-                    print("Chwytak jest zamknięty, nie można chwycić.")
+                    error_message = "Can't grab - grabber closed."
             else:
                 robot.grasp(None)
-                print("Za daleko od obiektu, nie można chwycić.")
+                error_message = "Can't grab - too far."
         if rl.is_key_pressed(rl.KEY_R):
             robot.release()
         if rl.is_key_pressed(rl.KEY_M):  # Klawisz do podania współrzędnych
@@ -151,6 +154,10 @@ while not rl.window_should_close():
 
     for i, line in enumerate(lines):
         rl.draw_text(line, 10, text_pos + i * line_spacing, font_size, color)
+
+    if error_message:
+        rl.draw_text(error_message, 10, 150, 20, rl.RED)
+
     rl.end_drawing()
 
 rl.close_window()

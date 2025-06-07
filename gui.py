@@ -1,6 +1,9 @@
 # gui.py
 
 import raylibpy as rl
+from primitives import Primitive
+
+primitive = Primitive()
 
 class PositionGUI:
     def __init__(self, robot):
@@ -40,6 +43,15 @@ class PositionGUI:
         elif rl.is_key_pressed(rl.KEY_BACKSPACE):
             if len(self.input_str[self.input_field]) > 0:
                 self.input_str[self.input_field] = self.input_str[self.input_field][:-1]
+        elif rl.is_key_pressed(rl.KEY_RIGHT_ALT):
+            # Przypisz do input_str aktualne pozycje kuli (primitive.position)
+            self.input_str = {
+                'x': str(primitive.position.x),
+                'y': str(primitive.position.y),
+                'z': str(primitive.position.z)
+            }
+            self.target = rl.Vector3(primitive.position.x, primitive.position.y, primitive.position.z)
+            self.message = "Position set to object position!"
 
     def try_move(self):
         try:
@@ -52,30 +64,31 @@ class PositionGUI:
                 self.show = False
                 self.message = ""
             else:
-                self.message = "Nie można przenieść ramienia – poza zasięgiem!"
+                self.message = "Cannot move to this position!"
         except ValueError:
-            self.message = "Nieprawidłowe wartości XYZ!"
+            self.message = "Invalid input! Please enter valid numbers."
 
     def draw(self):
         if not self.show:
             return
 
         gui_x, gui_y = 20, 200
-        rl.draw_rectangle(gui_x - 10, gui_y - 10, 400, 250, rl.fade(rl.LIGHTGRAY, 0.9))
+        rl.draw_rectangle(gui_x - 10, gui_y - 10, 400, 400, rl.fade(rl.LIGHTGRAY, 0.9))
         rl.draw_text("Set grabber position", gui_x, gui_y, 20, rl.DARKGRAY)
         rl.draw_text("TAB - next coordinate", gui_x , gui_y+20, 20, rl.DARKGRAY)
         rl.draw_text("L_ALT - close GUI", gui_x, gui_y + 40, 20, rl.DARKGRAY)
-        rl.draw_text(self.message, gui_x, gui_y + 60, 20, rl.RED)
+        rl.draw_text("RIGHT_ALT - set to object position", gui_x, gui_y + 60, 20, rl.DARKGRAY)
+        rl.draw_text(self.message, gui_x, gui_y + 80, 20, rl.RED)
 
         for i, axis in enumerate(['x', 'y', 'z']):
-            y_offset = gui_y + 90 + i * 40
+            y_offset = gui_y + 100 + i * 40
             color = rl.RED if self.input_field == axis else rl.BLACK
             rl.draw_text(f"{axis.upper()}: {self.input_str[axis]}", gui_x, y_offset, 30, color)
             rl.draw_rectangle(gui_x, y_offset + 30, 280, 2, rl.GRAY)
 
-        button_bounds = rl.Rectangle(gui_x, gui_y + 200, 200, 30)
+        button_bounds = rl.Rectangle(gui_x, gui_y + 250, 200, 30)
         rl.draw_rectangle_rec(button_bounds, rl.DARKGREEN)
-        rl.draw_text("ENTER - MOVE", int(gui_x + 10), int(gui_y + 205), 20, rl.WHITE)
+        rl.draw_text("ENTER - MOVE", int(gui_x + 10), int(gui_y + 255), 20, rl.WHITE)
 
         if rl.is_mouse_button_pressed(rl.MOUSE_LEFT_BUTTON) and rl.check_collision_point_rec(rl.get_mouse_position(), button_bounds):
             self.try_move()

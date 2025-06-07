@@ -7,7 +7,7 @@ import raylibpy as rl
 class Primitive:
     # Inicjalizacja
     def __init__(self):
-        self.position = rl.Vector3(1.0, 0.5, 1.0)
+        self.position = rl.Vector3(1.5, 0.5, 0.0)
         self.radius = 0.5
 
     # Rysowanie kuli
