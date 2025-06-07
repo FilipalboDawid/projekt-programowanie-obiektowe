@@ -164,34 +164,52 @@ class RobotArm:
         return kin["joint3"]
     
     # Ruch do określonej pozycji (teleportacja)
-    def move_to_position(self, target_position):
-        x, y, z = target_position.x, target_position.y, target_position.z
-        dx = x
-        dy = y - 0.5
-        dz = z
-        distance = np.sqrt(dx**2 + dy**2 + dz**2)
-        if distance > 2 * self.segment_length:
-            print("Cel poza zasięgiem!")
-            return False
+    def compute_inverse_kinematics(self, target_pos: rl.Vector3):
+        """
+        Oblicz odwrotną kinematykę metodą DH dla 3DOF ramienia (shoulder_pitch, shoulder_yaw, elbow).
+        target_pos - zadana pozycja końcówki ramienia (Vector3).
+        Zwraca: tuple (success: bool, angles: list of 3 angles w radianach)
+        """
 
-        shoulder_yaw = np.arctan2(dz, dx)
-        planar_distance = np.sqrt(dx**2 + dz**2)
-        total_distance = np.sqrt(planar_distance**2 + dy**2)
+        x = target_pos.x
+        y = target_pos.y - 0.5  # baza jest na wysokości 0.5
+        z = target_pos.z
 
-        cos_elbow = (2 * self.segment_length**2 - total_distance**2) / (2 * self.segment_length**2)
-        if not -1 <= cos_elbow <= 1:
-            print("Błąd geometrii (cos_elbow poza zakresem)")
-            return False
+        shoulder_yaw = np.arctan2(z, x)
+        planar_dist = np.sqrt(x**2 + z**2)
+        total_dist = np.sqrt(planar_dist**2 + y**2)
+
+        L = self.segment_length
+
+        if total_dist > 2 * L:
+            return False, [0, 0, 0]
+
+        cos_elbow = (2 * L**2 - total_dist**2) / (2 * L**2)
+
+        if cos_elbow < -1 or cos_elbow > 1:
+            return False, [0, 0, 0]
 
         elbow_angle = np.pi + np.arccos(cos_elbow)
-        shoulder_pitch = elbow_angle / 2 - np.arctan2(dy, planar_distance)
 
-        # Ograniczenia kątów (w radianach)
+        k1 = L + L * np.cos(elbow_angle)
+        k2 = L * np.sin(elbow_angle)
+        shoulder_pitch = np.arctan2(y, planar_dist) - np.arctan2(k2, k1)
+
         shoulder_pitch = np.clip(shoulder_pitch, np.deg2rad(40), np.deg2rad(120))
         shoulder_yaw = np.clip(shoulder_yaw, -np.deg2rad(175), np.deg2rad(175))
-        elbow_angle = np.clip(elbow_angle, -np.deg2rad(150), 0)
+        elbow_angle = np.clip(elbow_angle - np.pi, -np.deg2rad(150), 0)
 
-        self.target_joint_angles = [shoulder_pitch, shoulder_yaw, elbow_angle]
+        print(f"IK Debug: target=({x:.2f},{y+0.5:.2f},{z:.2f}), angles=({np.rad2deg(shoulder_pitch):.1f},{np.rad2deg(shoulder_yaw):.1f},{np.rad2deg(elbow_angle):.1f})")
+
+        return True, [shoulder_pitch, shoulder_yaw, elbow_angle]
+
+    def move_to_position(self, target_position):
+        success, angles = self.compute_inverse_kinematics(target_position)
+        if not success:
+            print("Cel poza zasięgiem lub nieosiągalny.")
+            return False
+
+        self.target_joint_angles = angles
         self.reaching = True
         return True
     

@@ -103,7 +103,7 @@ while not rl.window_should_close():
     gui.draw()
 
     rl.begin_mode3d(camera.camera)
-    
+    """Osie do wykasowania, na razie są *sparkles*developer tool*sparkles*"""
     # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
     axis_length = 2
     origin = (0, 0, 0)
