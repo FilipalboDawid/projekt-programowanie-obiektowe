@@ -104,18 +104,18 @@ while not rl.window_should_close():
 
     rl.begin_mode3d(camera.camera)
     # Osie do wykasowania, na razie są *sparkles*developer tool*sparkles*
-    # # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
-    # axis_length = 2
-    # origin = (0, 0, 0)
+    # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
+    axis_length = 2
+    origin = (0, 0, 0)
 
-    # # Oś X (czerwona)
-    # rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
+    # Oś X (czerwona)
+    rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
 
-    # # Oś Y (zielona)
-    # rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
+    # Oś Y (zielona)
+    rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
 
-    # # Oś Z (niebieska)
-    # rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
+    # Oś Z (niebieska)
+    rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
     
     # Rysowanie robota
     rl.begin_shader_mode(shader)

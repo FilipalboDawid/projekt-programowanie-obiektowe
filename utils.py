@@ -86,7 +86,7 @@ def compute_inverse_kinematics_dh(x, y, z, L1, L2, L3):
     solutions = []
 
     # dwie opcje dla theta1
-    theta1_options = [np.arctan2(z, x), np.arctan2(-z, -x)]
+    theta1_options = [np.arctan2(-z, x)]
 
     for theta1 in theta1_options:
         r = np.sqrt(x**2 + z**2)
