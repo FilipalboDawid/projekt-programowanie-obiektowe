@@ -119,22 +119,34 @@ def compute_inverse_kinematics_dh(x, y, z, L1, L2, L3):
     return solutions
 
 def filter_solutions_by_limits(solutions, current_angles):
-    # Limity takie jak w handle_input (w radianach)
-    pitch_min, pitch_max = np.deg2rad(40), np.deg2rad(120)
-    yaw_min, yaw_max = -np.deg2rad(175), np.deg2rad(175)
-    elbow_min, elbow_max = -np.deg2rad(150), 0
+    # Definicja zakresów kątów (w radianach)
+    # (tutaj przykładowo, dopasuj do swojego robota)
+    limits = [
+        (np.deg2rad(40), np.deg2rad(120)),   # pitch
+        (np.deg2rad(-175), np.deg2rad(175)), # yaw
+        (np.deg2rad(-150), 0)                 # elbow
+    ]
 
-    valid_solutions = []
+    def within_limits(angles):
+        for angle, (low, high) in zip(angles, limits):
+            # Normalizacja kąta do [-pi, pi]
+            a = np.arctan2(np.sin(angle), np.cos(angle))
+            if a < low or a > high:
+                return False
+        return True
 
-    for sol in solutions:
-        pitch, yaw, elbow = sol
-        if pitch_min <= pitch <= pitch_max and \
-           yaw_min <= yaw <= yaw_max and \
-           elbow_min <= elbow <= elbow_max:
-            valid_solutions.append(sol)
+    # Filtrujemy rozwiązania mieszczące się w zakresie
+    valid_solutions = [sol for sol in solutions if within_limits(sol)]
 
     if not valid_solutions:
         return None
+
+    # Wybierz rozwiązanie najbliższe obecnym kątom (minimalizując sumę różnic kątów)
+    def distance(sol):
+        return sum(abs(a - b) for a, b in zip(sol, current_angles))
+
+    best_solution = min(valid_solutions, key=distance)
+    return best_solution
 
     # Wybierz rozwiązanie najbliższe obecnym kątom
     def angle_distance(a1, a2):

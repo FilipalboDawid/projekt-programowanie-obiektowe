@@ -53,11 +53,7 @@ class RobotArm:
             self.joint_angles[2] += 0.02
         if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -np.deg2rad(150):
             self.joint_angles[2] -= 0.02
-
-        # Reset pozycji
-        if rl.is_key_pressed(rl.KEY_L):
-            self.joint_angles = init_angles
-
+    
     # Rysowanie ramienia robota
     def compute_forward_kinematics(self):
         theta1 = self.joint_angles[1]  # yaw
