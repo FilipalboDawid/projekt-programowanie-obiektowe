@@ -21,7 +21,7 @@ def draw_ellipse_shadow(center, radius_x, radius_z, color, segments=36):
         x = center[0] + math.cos(angle) * radius_x
         z = center[2] + math.sin(angle) * radius_z
         points.append(rl.Vector3(x, center[1], z))
-    # Rysuj trójkąty „z góry” (w prawo)
+    # Rysuj trójkąty "z góry" (w prawo)
     for i in range(segments):
         rl.draw_triangle3d(
             rl.Vector3(center[0], center[1], center[2]),
@@ -29,7 +29,7 @@ def draw_ellipse_shadow(center, radius_x, radius_z, color, segments=36):
             points[(i+1)%segments],
             color
         )
-    # Rysuj trójkąty „od dołu” (w lewo)
+    # Rysuj trójkąty "od dołu" (w lewo)
     for i in range(segments):
         rl.draw_triangle3d(
             rl.Vector3(center[0], center[1], center[2]),
@@ -44,7 +44,7 @@ rl.set_target_fps(60)
 mode = 'free'
 error_message = ""
 
-light_dir = (-0.5, -1.0, -0.5)
+light_dir = (5, 5, 5)
 light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
 
 camera = Camera()
@@ -156,14 +156,45 @@ while not rl.window_should_close():
     # Cienie stawów
     kin = robot.compute_forward_kinematics()
     joints = [kin["base"], kin["joint1"], kin["joint2"], kin["joint3"]]
-    for joint in joints:
+    for i, joint in enumerate(joints):
         joint_pos = np.array([joint.x, joint.y, joint.z])
         t = joint_pos[1] / -light_dir[1] if light_dir[1] != 0 else 0
         shadow_pos = joint_pos + light_dir * t
         shadow_pos[1] = 0.01
-        shadow_radius_x = 0.2 * (1 + abs(light_dir[0]))
-        shadow_radius_z = 0.28 * (1 + abs(light_dir[2]))
-        draw_ellipse_shadow(tuple(shadow_pos), shadow_radius_x, shadow_radius_z, rl.fade(rl.BLACK, 0.35))
+        
+        if i == len(joints)-1:  # Dla ostatniego stawu (chwytaka)
+            # Cień chwytaka w kształcie dwóch "palców"
+            finger_width = 0.08
+            finger_length = 0.25
+            gap = 0.1  # Odstęp między palcami
+            
+            # Lewy palec
+            p1 = rl.Vector3(shadow_pos[0] - finger_width - gap/2, shadow_pos[1], shadow_pos[2] - finger_length/2)
+            p2 = rl.Vector3(shadow_pos[0] - gap/2, shadow_pos[1], shadow_pos[2] - finger_length/2)
+            p3 = rl.Vector3(shadow_pos[0] - gap/2, shadow_pos[1], shadow_pos[2] + finger_length/2)
+            p4 = rl.Vector3(shadow_pos[0] - finger_width - gap/2, shadow_pos[1], shadow_pos[2] + finger_length/2)
+            
+            # Prawy palec
+            p5 = rl.Vector3(shadow_pos[0] + gap/2, shadow_pos[1], shadow_pos[2] - finger_length/2)
+            p6 = rl.Vector3(shadow_pos[0] + finger_width + gap/2, shadow_pos[1], shadow_pos[2] - finger_length/2)
+            p7 = rl.Vector3(shadow_pos[0] + finger_width + gap/2, shadow_pos[1], shadow_pos[2] + finger_length/2)
+            p8 = rl.Vector3(shadow_pos[0] + gap/2, shadow_pos[1], shadow_pos[2] + finger_length/2)
+            
+            # Rysuj cień lewego palca
+            rl.draw_triangle3d(p1, p2, p3, rl.fade(rl.BLACK, 0.5))
+            rl.draw_triangle3d(p1, p3, p4, rl.fade(rl.BLACK, 0.5))
+            rl.draw_triangle3d(p3, p2, p1, rl.fade(rl.BLACK, 0.5))
+            rl.draw_triangle3d(p4, p3, p1, rl.fade(rl.BLACK, 0.5))
+            
+            # Rysuj cień prawego palca
+            rl.draw_triangle3d(p5, p6, p7, rl.fade(rl.BLACK, 0.5))
+            rl.draw_triangle3d(p5, p7, p8, rl.fade(rl.BLACK, 0.5))
+            rl.draw_triangle3d(p7, p6, p5, rl.fade(rl.BLACK, 0.5))
+            rl.draw_triangle3d(p8, p7, p5, rl.fade(rl.BLACK, 0.5))
+        else:  # Dla pozostałych stawów
+            shadow_radius_x = 0.2 * (1 + abs(light_dir[0]))
+            shadow_radius_z = 0.28 * (1 + abs(light_dir[2]))
+            draw_ellipse_shadow(tuple(shadow_pos), shadow_radius_x, shadow_radius_z, rl.fade(rl.BLACK, 0.35))
 
     # Cienie ramion między stawami (prostokąt)
     def draw_shadow_rect(start, end, width, color):
