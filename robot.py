@@ -1,42 +1,15 @@
-#roboty.py
+#robot.py
 
+# Importy
 import raylibpy as rl
 import numpy as np
+from utils import to_vec3, compute_inverse_kinematics_dh, filter_solutions_by_limits
 
-# Pomocnicze funkcje wektorowe
-def vec3_add(v1, v2):
-    return rl.Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z)
+# Definicje
+init_angles = [np.deg2rad(65), np.deg2rad(0), np.deg2rad(-100)]
 
-def vec3_scale(v, scalar):
-    return rl.Vector3(v.x * scalar, v.y * scalar, v.z * scalar)
-
-def rotation_x(angle):
-    return [
-        [1, 0, 0],
-        [0, np.cos(angle), -np.sin(angle)],
-        [0, np.sin(angle), np.cos(angle)]
-    ]
-
-def rotation_y(angle):
-    return [
-        [np.cos(angle), 0, np.sin(angle)],
-        [0, 1, 0],
-        [-np.sin(angle), 0, np.cos(angle)]
-    ]
-
-def rotation_z(angle):
-    return [
-        [np.cos(angle), -np.sin(angle), 0],
-        [np.sin(angle), np.cos(angle), 0],
-        [0, 0, 1]
-    ]
+# Obliczanie cienia
 def calculate_shading(light_direction, normal):
-    """
-    Oblicza kolor na podstawie kąta między kierunkiem światła a normalną powierzchni.
-    :param light_direction: Kierunek światła (Vector3).
-    :param normal: Normalna powierzchni (Vector3).
-    :return: Kolor (Color).
-    """
     light_dir_normalized = rl.vector3_normalize(light_direction)
     normal_normalized = rl.vector3_normalize(normal)
     dot_product = rl.vector3_dot_product(light_dir_normalized, normal_normalized)
@@ -47,178 +20,197 @@ def calculate_shading(light_direction, normal):
     shaded_color = rl.color_from_normalized(intensity * rl.color_to_normalized(base_color))
     return shaded_color
 
-def apply_rotation(vec, mat):
-    x = vec.x * mat[0][0] + vec.y * mat[0][1] + vec.z * mat[0][2]
-    y = vec.x * mat[1][0] + vec.y * mat[1][1] + vec.z * mat[1][2]
-    z = vec.x * mat[2][0] + vec.y * mat[2][1] + vec.z * mat[2][2]
-    return rl.Vector3(x, y, z)
-
+# Klasa RobotArm
 class RobotArm:
+    # Initializacja
     def __init__(self):
-        self.joint_angles = [np.deg2rad(-25), np.deg2rad(0), np.deg2rad(-100)]  # shoulder_pitch, shoulder_yaw, elbow
+        self.joint_angles = init_angles  # shoulder_pitch, shoulder_yaw, elbow
         self.segment_length = 2.0
         self.grabbing = False
         self.grabbed_object = None
-    
-    
-    def move_to_position(self, target_position):
-        """
-        Przemieszcza ramię robota do określonej pozycji.
-        :param target_position: Wektor docelowej pozycji (Vector3).
-        """
-        x, y, z = target_position.x, target_position.y, target_position.z
+        self.gripper_model = rl.gen_mesh_cube(1.0, 1.0, 1.0)
+        self.gripper_model = rl.load_model_from_mesh(self.gripper_model)
+        self.reaching = False
+        self.target_pos = rl.Vector3(0, 0, 0)
+        self.interp_alpha = 0.0  # lub 1.0, jeśli wolisz domyślnie "brak interpolacji"
 
-        # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
-        distance = np.sqrt(x**2 + z**2)
-
-        # Sprawdź, czy cel jest osiągalny
-        if distance > 2 * self.segment_length or y < 0:
-            print("Cel poza zasięgiem robota!")
-            return False
-
-        # Oblicz kąty stawów
-        shoulder_yaw = np.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
-        shoulder_pitch = np.atan2(y, distance)  # Kąt podniesienia ramienia
-        elbow_angle = -np.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
-
-        # Zaktualizuj kąty stawów
-        self.joint_angles[0] = shoulder_pitch
-        self.joint_angles[1] = shoulder_yaw
-        self.joint_angles[2] = elbow_angle
-
-        print(f"Robot przemieścił się do pozycji: {target_position}")
-        return True
-    
-    def move_to_position_smooth(self, target_position, step=0.01):
-        """
-        Przemieszcza ramię robota stopniowo do określonej pozycji.
-        :param target_position: Wektor docelowej pozycji (Vector3).
-        :param step: Wielkość kroku przesunięcia.
-        """
-        x, y, z = target_position.x, target_position.y, target_position.z
-
-        # Oblicz odległość od podstawy do celu w płaszczyźnie XZ
-        distance = np.sqrt(x**2 + z**2)
-
-        # Sprawdź, czy cel jest osiągalny
-        if distance > 2 * self.segment_length or y < 0:
-            print("Cel poza zasięgiem robota!")
-            return False
-
-        # Oblicz docelowe kąty stawów
-        shoulder_yaw = np.atan2(z, x)  # Kąt obrotu w płaszczyźnie XZ
-        shoulder_pitch = np.atan2(y, distance)  # Kąt podniesienia ramienia
-        elbow_angle = -np.acos((distance**2 + y**2) / (2 * self.segment_length**2))  # Kąt łokcia
-
-        # Stopniowe przesuwanie kątów
-        self.joint_angles[0] += step * (shoulder_pitch - self.joint_angles[0])
-        self.joint_angles[1] += step * (shoulder_yaw - self.joint_angles[1])
-        self.joint_angles[2] += step * (elbow_angle - self.joint_angles[2])
-
-        return True
-    
-    def draw_shadow(self, light_direction):
-        """
-        Rysuje cień ramienia robota na płaszczyźnie na podstawie kierunku światła.
-        :param light_direction: Kierunek światła (Vector3).
-        """
-        base = rl.Vector3(0, 0.5, 0)
-        up = rl.Vector3(0, 1, 0)
-
-        # Ramię 1: Shoulder Pitch + Yaw
-        rot_pitch = rotation_x(self.joint_angles[0])
-        rot_yaw = rotation_y(self.joint_angles[1])
-        dir1 = apply_rotation(up, rot_pitch)
-        dir1 = apply_rotation(dir1, rot_yaw)
-        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length))
-
-        # Ramię 2: Elbow
-        rot_elbow = rotation_x(self.joint_angles[2])
-        dir2 = apply_rotation(up, rot_elbow)
-        dir2 = apply_rotation(dir2, rot_pitch)
-        dir2 = apply_rotation(dir2, rot_yaw)
-        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
-
-        # Oblicz pozycje cieni na płaszczyźnie Y=0
-        shadow_base = rl.Vector3(base.x - light_direction.x * base.y, 0.0, base.z - light_direction.z * base.y)
-        shadow_joint1 = rl.Vector3(joint1.x - light_direction.x * joint1.y, 0.0, joint1.z - light_direction.z * joint1.y)
-        shadow_joint2 = rl.Vector3(joint2.x - light_direction.x * joint2.y, 0.0, joint2.z - light_direction.z * joint2.y)
-
-        # Rysowanie cieni jako cylindry
-        rl.draw_cylinder_ex(shadow_base, shadow_joint1, 0.1, 0.1, 10, rl.GRAY)
-        rl.draw_cylinder_ex(shadow_joint1, shadow_joint2, 0.1, 0.1, 10, rl.GRAY)
-
-        # Rysowanie cieni dla stawów
-        rl.draw_sphere(shadow_joint1, 0.2, rl.GRAY)
-        rl.draw_sphere(shadow_joint2, 0.2, rl.GRAY)
-
-        # Rysowanie cienia chwytaka
-        if self.grabbing:
-            shadow_gripper = rl.Vector3(joint2.x - light_direction.x * joint2.y, 0.0, joint2.z - light_direction.z * joint2.y)
-            rl.draw_cube(shadow_gripper, 0.3, 0.1, 0.3, rl.GRAY)
-        else:
-            shadow_gripper = rl.Vector3(joint2.x - light_direction.x * joint2.y, 0.0, joint2.z - light_direction.z * joint2.y)
-            rl.draw_cube(shadow_gripper, 0.2, 0.1, 0.2, rl.GRAY)
-    
+    # Obsługa wejścia z klawiatury
     def handle_input(self):
-        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < 0.8*(np.pi / 4): self.joint_angles[0] += 0.02  # Shoulder Pitch (X)
-        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > -0.95*(np.pi / 4) and self.get_end_effector_pos().y > 0.1: self.joint_angles[0] -= 0.02
-        if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < 0.9* np.pi: self.joint_angles[1] += 0.02  # Shoulder Yaw (Y)
-        if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > - 0.9 * np.pi: self.joint_angles[1] -= 0.02
-        if rl.is_key_down(rl.KEY_UP)and self.joint_angles[2] < 0.8 * (np.pi/8): self.joint_angles[2] += 0.02  # Elbow (X)
-        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -0.8 * np.pi and self.get_end_effector_pos().y > 0.1: self.joint_angles[2] -= 0.02
+        # shoulder_pitch (X)
+        if rl.is_key_down(rl.KEY_W) and self.joint_angles[0] < np.deg2rad(120):
+            self.joint_angles[0] += 0.02
+        if rl.is_key_down(rl.KEY_S) and self.joint_angles[0] > np.deg2rad(40):
+            self.joint_angles[0] -= 0.02
 
-    def draw(self):
-        base = rl.Vector3(0, 0.5, 0)
-        up = rl.Vector3(0, 1, 0)
+        # shoulder_yaw (Y)
+        if rl.is_key_down(rl.KEY_A) and self.joint_angles[1] < np.deg2rad(175):
+            self.joint_angles[1] += 0.02
+        if rl.is_key_down(rl.KEY_D) and self.joint_angles[1] > -np.deg2rad(175):
+            self.joint_angles[1] -= 0.02
 
-        # Ramię 1: Shoulder Pitch + Yaw
-        rot_pitch = rotation_x(self.joint_angles[0])
-        rot_yaw = rotation_y(self.joint_angles[1])
-        dir1 = apply_rotation(up, rot_pitch)
-        dir1 = apply_rotation(dir1, rot_yaw)
-        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length))
+        # elbow (X)
+        if rl.is_key_down(rl.KEY_UP) and self.joint_angles[2] < 0:
+            self.joint_angles[2] += 0.02
+        if rl.is_key_down(rl.KEY_DOWN) and self.joint_angles[2] > -np.deg2rad(150):
+            self.joint_angles[2] -= 0.02
+    
+    # Rysowanie ramienia robota
+    def compute_forward_kinematics(self):
+        theta1 = self.joint_angles[1]  # yaw
+        theta2 = self.joint_angles[0]  # pitch
+        theta3 = self.joint_angles[2]  # elbow
 
-        # Ramię 2: Elbow
-        rot_elbow = rotation_x(self.joint_angles[2])
-        dir2 = apply_rotation(up, rot_elbow)
-        dir2 = apply_rotation(dir2, rot_pitch)
-        dir2 = apply_rotation(dir2, rot_yaw)
-        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
+        L1 = 0.5
+        L2 = self.segment_length
+        L3 = self.segment_length
 
-        rl.draw_cylinder_ex(base, joint1, 0.1, 0.1, 10, rl.GRAY)  # Rysowanie ramienia 1
-        rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
-        rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)  # Rysowanie stawów
-        rl.draw_sphere(base, 0.2, rl.DARKGRAY)
-        rl.draw_cylinder_ex([0,0,0], base, 0.5, 0.5, 20, rl.DARKGRAY)  # Rysowanie podstawy
-        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
-        if self.grabbing:
-            rl.draw_cube(joint2, 0.3, 0.3, 0.3, rl.DARKGRAY)  # Rysowanie chwytu
-        else:
-            rl.draw_cube(joint2, 0.2, 0.2, 0.2, rl.BLACK)
-        if self.grabbing and self.grabbed_object:
-            self.grabbed_object.position = joint2
+        # DH: Z0→Z1 (obrót yaw wokół Y, baza w górę Y)
+        T0_1 = np.array([
+            [np.cos(theta1), 0, np.sin(theta1), 0],
+            [0, 1, 0, L1],
+            [-np.sin(theta1), 0, np.cos(theta1), 0],
+            [0, 0, 0, 1]
+        ])
 
-        #print(self.get_end_effector_pos())
+        # DH: Z1→Z2 (pitch)
+        T1_2 = np.array([
+            [np.cos(theta2), -np.sin(theta2), 0, L2 * np.cos(theta2)],
+            [np.sin(theta2), np.cos(theta2),  0, L2 * np.sin(theta2)],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])
 
-    def get_end_effector_pos(self):
+        # DH: Z2→Z3 (elbow)
+        T2_3 = np.array([
+            [np.cos(theta3), -np.sin(theta3), 0, L3 * np.cos(theta3)],
+            [np.sin(theta3), np.cos(theta3),  0, L3 * np.sin(theta3)],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])
+
+        T0_2 = T0_1 @ T1_2
+        T0_3 = T0_2 @ T2_3
+
+        # Punkty
         base = rl.Vector3(0, 0, 0)
-        up = rl.Vector3(0, 1, 0)
+        joint1 = to_vec3(T0_1 @ np.array([0, 0, 0, 1]))
+        joint2 = to_vec3(T0_2 @ np.array([0, 0, 0, 1]))
+        joint3 = to_vec3(T0_3 @ np.array([0, 0, 0, 1]))
 
-        rot_pitch = rotation_x(self.joint_angles[0])
-        rot_yaw = rotation_y(self.joint_angles[1])
-        dir1 = apply_rotation(up, rot_pitch)
-        dir1 = apply_rotation(dir1, rot_yaw)
-        joint1 = vec3_add(base, vec3_scale(dir1, self.segment_length))
+        return {
+            "base": base,
+            "joint1": joint1,
+            "joint2": joint2,
+            "joint3": joint3,
+            "T0_1": T0_1,
+            "T0_2": T0_2,
+            "T0_3": T0_3
+        }
+    
+    def draw(self):
+        kin = self.compute_forward_kinematics()
+        base = kin["base"]
+        joint1 = kin["joint1"]
+        joint2 = kin["joint2"]
+        joint3 = kin["joint3"]
 
-        rot_elbow = rotation_x(self.joint_angles[2])
-        dir2 = apply_rotation(up, rot_elbow)
-        dir2 = apply_rotation(dir2, rot_pitch)
-        dir2 = apply_rotation(dir2, rot_yaw)
-        joint2 = vec3_add(joint1, vec3_scale(dir2, self.segment_length))
+        # Rysowanie segmentów ramienia (3 segmenty):
+        rl.draw_cylinder_ex(base, joint1, 0.5, 0.5, 40, rl.GRAY)
+        rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
+        rl.draw_cylinder_ex(joint2, joint3, 0.1, 0.1, 10, rl.GRAY)
+        
+        
 
-        return joint2
+        
+        # Rysowanie stawów
+        rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)
+        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
+        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
 
+        # Podstawa (np. cylinder od zera do bazy)
+        rl.draw_cylinder_ex(rl.Vector3(0, 0, 0), base, 0.5, 0.5, 20, rl.DARKGRAY)
+
+        # Kierunek końcówki (chwytaka) - wektor od joint2 do joint3
+        forward = rl.Vector3(
+            joint3.x - joint2.x,
+            joint3.y - joint2.y,
+            joint3.z - joint2.z
+        )
+        forward = rl.vector3_normalize(forward)
+
+        # Globalny "up"
+        global_up = rl.Vector3(0, 1, 0)
+        dot = rl.vector3_dot_product(forward, global_up)
+        if abs(dot) > 0.99:
+            global_up = rl.Vector3(0, 0, 1)
+
+        # Wektor boczny prostopadły do forward i global_up
+        side_vector = rl.vector3_cross_product(forward, global_up)
+        side_vector = rl.vector3_normalize(side_vector)
+
+        # Rozstaw szczypiec
+        spread = 0.05 if self.grabbing else 0.15
+
+        # Pozycje palców szczypiec
+        finger1_pos = rl.vector3_add(joint3, rl.vector3_scale(side_vector, spread))
+        finger2_pos = rl.vector3_subtract(joint3, rl.vector3_scale(side_vector, spread))
+
+        # Rozmiar palców szczypiec
+        finger_size = rl.Vector3(0.05, 0.2, 0.05)
+        color = rl.DARKGRAY if self.grabbing else rl.DARKGRAY
+
+        # Rysuj szczypce
+        rl.draw_cube(finger1_pos, finger_size.x, finger_size.y, finger_size.z, color)
+        rl.draw_cube(finger2_pos, finger_size.x, finger_size.y, finger_size.z, color)
+
+        # Jeśli chwytamy obiekt, aktualizuj jego pozycję na końcówkę
+        if self.grabbing and self.grabbed_object:
+            self.grabbed_object.position = joint3
+
+
+    # Pobranie pozycji końcówki ramienia robota
+    def get_end_effector_pos(self):
+        kin = self.compute_forward_kinematics()
+        return kin["joint3"]
+
+    def move_to_position(self, target_position):
+        solutions = compute_inverse_kinematics_dh(target_position.x, target_position.y, target_position.z, 0.5, self.segment_length, self.segment_length)
+        if not solutions:
+            print("Brak rozwiązań odwrotnej kinematyki")
+            return False
+
+        filtered_solution = filter_solutions_by_limits(solutions, self.joint_angles)
+        if filtered_solution is None:
+            print("Brak rozwiązań mieszczących się w ograniczeniach ruchu")
+            return False
+
+        self.target_joint_angles = filtered_solution
+        self.reaching = True
+
+        for i, sol in enumerate(solutions):
+            deg = np.rad2deg(sol)
+            print(f"Rozwiązanie {i+1}: pitch={deg[0]:.1f}, yaw={deg[1]:.1f}, elbow={deg[2]:.1f}")
+        print("Wybrane kąty:", np.rad2deg(self.target_joint_angles))
+        print("Docelowa pozycja:", target_position)
+
+        return True
+    
+    def update_motion(self, speed=0.02):
+        if not self.reaching:
+            return
+
+        done = True
+        for i in range(3):
+            diff = self.target_joint_angles[i] - self.joint_angles[i]
+            if abs(diff) > 0.01:
+                self.joint_angles[i] += np.clip(diff, -speed, speed)
+                done = False
+
+        if done:
+            self.reaching = False
+            print("Osiągnięto cel.")
+
+    # Chwytanie obiektu
     def grasp(self, primitive):
         self.grabbing = True
         self.grabbed_object = primitive
