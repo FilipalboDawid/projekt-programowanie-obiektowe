@@ -11,6 +11,8 @@ from gui import PositionGUI
 import numpy as np
 import ctypes
 import math
+import math
+
 
 def draw_ellipse_shadow(center, radius_x, radius_z, color, segments=36):
     points = []
@@ -19,11 +21,20 @@ def draw_ellipse_shadow(center, radius_x, radius_z, color, segments=36):
         x = center[0] + math.cos(angle) * radius_x
         z = center[2] + math.sin(angle) * radius_z
         points.append(rl.Vector3(x, center[1], z))
+    # Rysuj trójkąty „z góry” (w prawo)
     for i in range(segments):
         rl.draw_triangle3d(
             rl.Vector3(center[0], center[1], center[2]),
             points[i],
             points[(i+1)%segments],
+            color
+        )
+    # Rysuj trójkąty „od dołu” (w lewo)
+    for i in range(segments):
+        rl.draw_triangle3d(
+            rl.Vector3(center[0], center[1], center[2]),
+            points[(i+1)%segments],
+            points[i],
             color
         )
 # Inicjalizacja
@@ -132,26 +143,61 @@ while not rl.window_should_close():
     # # Oś Z (niebieska)
     # rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
     
-    # Rysowanie cieni
-    # Cień piłki
+    # Kierunek światła (znormalizowany)
+    light_dir = np.array([0.5, 0.5, 0.5])
+    light_dir = light_dir / np.linalg.norm(light_dir)
+
+    # Cień piłki (mniejsza elipsa)
     shadow_pos = (primitive.position.x, 0.01, primitive.position.z)
-    rl.draw_cylinder(shadow_pos, primitive.radius * 1, primitive.radius * 1, 0.01, 32, rl.fade(rl.BLACK, 0.3))
-    
-    # Cień robota (pod każdym segmentem)
+    shadow_radius_x = primitive.radius * 0.5 * (1 + abs(light_dir[0]))
+    shadow_radius_z = primitive.radius * 0.5 * (1 + abs(light_dir[2]))
+    draw_ellipse_shadow(shadow_pos, shadow_radius_x, shadow_radius_z, rl.fade(rl.BLACK, 0.45))
+
+    # Cienie stawów
     kin = robot.compute_forward_kinematics()
     joints = [kin["base"], kin["joint1"], kin["joint2"], kin["joint3"]]
-    
-    # Cienie stawów
     for joint in joints:
-        shadow_pos = (joint.x, 0.01, joint.z)
-        rl.draw_cylinder(shadow_pos, 0.2, 0.2, 0.01, 32, rl.fade(rl.BLACK, 0.3))
-    
-    # Cienie ramion między stawami (mniejszy promień)
+        joint_pos = np.array([joint.x, joint.y, joint.z])
+        t = joint_pos[1] / -light_dir[1] if light_dir[1] != 0 else 0
+        shadow_pos = joint_pos + light_dir * t
+        shadow_pos[1] = 0.01
+        shadow_radius_x = 0.2 * (1 + abs(light_dir[0]))
+        shadow_radius_z = 0.28 * (1 + abs(light_dir[2]))
+        draw_ellipse_shadow(tuple(shadow_pos), shadow_radius_x, shadow_radius_z, rl.fade(rl.BLACK, 0.35))
+
+    # Cienie ramion między stawami (prostokąt)
+    def draw_shadow_rect(start, end, width, color):
+        dx = end[0] - start[0]
+        dz = end[2] - start[2]
+        length = math.sqrt(dx*dx + dz*dz)
+        if length == 0:
+            return
+        nx = -dz / length
+        nz = dx / length
+        half_w = width / 2
+        p1 = rl.Vector3(start[0] + nx * half_w, start[1], start[2] + nz * half_w)
+        p2 = rl.Vector3(start[0] - nx * half_w, start[1], start[2] - nz * half_w)
+        p3 = rl.Vector3(end[0] - nx * half_w, end[1], end[2] - nz * half_w)
+        p4 = rl.Vector3(end[0] + nx * half_w, end[1], end[2] + nz * half_w)
+        # Z góry
+        rl.draw_triangle3d(p1, p2, p3, color)
+        rl.draw_triangle3d(p1, p3, p4, color)
+        # Od dołu (odwrócona kolejność)
+        rl.draw_triangle3d(p3, p2, p1, color)
+        rl.draw_triangle3d(p4, p3, p1, color)
+
     for i in range(len(joints)-1):
-        start = (joints[i].x, 0.01, joints[i].z)
-        end = (joints[i+1].x, 0.01, joints[i+1].z)
-        rl.draw_cylinder_ex(start, end, 0.08, 0.08, 32, rl.fade(rl.BLACK, 0.3))
-    
+        # Rzutuj oba końce segmentu na podłogę zgodnie z kierunkiem światła
+        start_pos = np.array([joints[i].x, joints[i].y, joints[i].z])
+        end_pos = np.array([joints[i+1].x, joints[i+1].y, joints[i+1].z])
+        t_start = start_pos[1] / -light_dir[1] if light_dir[1] != 0 else 0
+        t_end = end_pos[1] / -light_dir[1] if light_dir[1] != 0 else 0
+        shadow_start = start_pos + light_dir * t_start
+        shadow_end = end_pos + light_dir * t_end
+        shadow_start[1] = 0.01
+        shadow_end[1] = 0.01
+        shadow_width = 0.15 * (1 + 0.5 * (abs(light_dir[0]) + abs(light_dir[2])))
+        draw_shadow_rect(tuple(shadow_start), tuple(shadow_end), shadow_width, rl.fade(rl.BLACK, 0.35))
     # Rysowanie robota
     rl.begin_shader_mode(shader)
     robot.draw()
