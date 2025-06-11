@@ -13,30 +13,6 @@ import numpy as np
 import ctypes
 import math
 
-
-def draw_ellipse_shadow(center, radius_x, radius_z, color, segments=36):
-    points = []
-    for i in range(segments):
-        angle = 2 * math.pi * i / segments
-        x = center[0] + math.cos(angle) * radius_x
-        z = center[2] + math.sin(angle) * radius_z
-        points.append(rl.Vector3(x, center[1], z))
-    # Rysuj trójkąty "z góry" (w prawo)
-    for i in range(segments):
-        rl.draw_triangle3d(
-            rl.Vector3(center[0], center[1], center[2]),
-            points[i],
-            points[(i+1)%segments],
-            color
-        )
-    # Rysuj trójkąty "od dołu" (w lewo)
-    for i in range(segments):
-        rl.draw_triangle3d(
-            rl.Vector3(center[0], center[1], center[2]),
-            points[(i+1)%segments],
-            points[i],
-            color
-        )
 # Inicjalizacja
 WIDTH, HEIGHT = 1600, 900
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
