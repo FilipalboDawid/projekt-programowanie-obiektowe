@@ -10,7 +10,22 @@ from utils import distance_vec3
 from gui import PositionGUI
 import numpy as np
 import ctypes
+import math
 
+def draw_ellipse_shadow(center, radius_x, radius_z, color, segments=36):
+    points = []
+    for i in range(segments):
+        angle = 2 * math.pi * i / segments
+        x = center[0] + math.cos(angle) * radius_x
+        z = center[2] + math.sin(angle) * radius_z
+        points.append(rl.Vector3(x, center[1], z))
+    for i in range(segments):
+        rl.draw_triangle3d(
+            rl.Vector3(center[0], center[1], center[2]),
+            points[i],
+            points[(i+1)%segments],
+            color
+        )
 # Inicjalizacja
 WIDTH, HEIGHT = 1600, 900
 rl.init_window(WIDTH, HEIGHT, b"3D Robot Arm Simulation")
@@ -117,17 +132,31 @@ while not rl.window_should_close():
     # # Oś Z (niebieska)
     # rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
     
+    # Rysowanie cieni
+    # Cień piłki
+    shadow_pos = (primitive.position.x, 0.01, primitive.position.z)
+    rl.draw_cylinder(shadow_pos, primitive.radius * 1, primitive.radius * 1, 0.01, 32, rl.fade(rl.BLACK, 0.3))
+    
+    # Cień robota (pod każdym segmentem)
+    kin = robot.compute_forward_kinematics()
+    joints = [kin["base"], kin["joint1"], kin["joint2"], kin["joint3"]]
+    
+    # Cienie stawów
+    for joint in joints:
+        shadow_pos = (joint.x, 0.01, joint.z)
+        rl.draw_cylinder(shadow_pos, 0.2, 0.2, 0.01, 32, rl.fade(rl.BLACK, 0.3))
+    
+    # Cienie ramion między stawami (mniejszy promień)
+    for i in range(len(joints)-1):
+        start = (joints[i].x, 0.01, joints[i].z)
+        end = (joints[i+1].x, 0.01, joints[i+1].z)
+        rl.draw_cylinder_ex(start, end, 0.08, 0.08, 32, rl.fade(rl.BLACK, 0.3))
+    
     # Rysowanie robota
     rl.begin_shader_mode(shader)
-    robot.draw()  # lub ręczne rysowanie segmentów
-    primitive.draw()  # lub ręczne rysowanie segmentów
+    robot.draw()
+    primitive.draw()
     rl.end_shader_mode()
-
-
-    # Rysowanie cienia robota
-    light_direction = rl.Vector3(-0.5, -1.0, -0.5)  # Kierunek światła
-
-   
 
     rl.draw_grid(20, 0.5)
     rl.end_mode3d()
