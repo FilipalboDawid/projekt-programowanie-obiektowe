@@ -8,8 +8,10 @@ from sequence import SequenceManager
 from camera import Camera
 from utils import distance_vec3
 from gui import PositionGUI
+from shadows import draw_shadows
 import numpy as np
 import ctypes
+import math
 
 # Inicjalizacja
 WIDTH, HEIGHT = 1600, 900
@@ -18,7 +20,7 @@ rl.set_target_fps(60)
 mode = 'free'
 error_message = ""
 
-light_dir = (-0.5, -1.0, -0.5)
+light_dir = (1.0, 0.0, 0.0)  # Światło z prawej strony
 light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
 
 camera = Camera()
@@ -103,35 +105,16 @@ while not rl.window_should_close():
     gui.draw()
 
     rl.begin_mode3d(camera.camera)
-    # Osie do wykasowania, na razie są *sparkles*developer tool*sparkles*
-    # # Osi X, Y, Z – długość 0.3, kolory: czerwony (X), zielony (Y), niebieski (Z)
-    # axis_length = 2
-    # origin = (0, 0, 0)
-
-    # # Oś X (czerwona)
-    # rl.draw_line3d(origin, (axis_length, 0, 0), rl.RED)
-
-    # # Oś Y (zielona)
-    # rl.draw_line3d(origin, (0, axis_length, 0), rl.GREEN)
-
-    # # Oś Z (niebieska)
-    # rl.draw_line3d(origin, (0, 0, axis_length), rl.BLUE)
+    
+    
+    # Rysowanie cieni
+    draw_shadows(robot, primitive, light_dir)
     
     # Rysowanie robota
     rl.begin_shader_mode(shader)
-    robot.draw()  # lub ręczne rysowanie segmentów
-    primitive.draw()  # lub ręczne rysowanie segmentów
+    robot.draw()
+    primitive.draw()
     rl.end_shader_mode()
-
-
-    # Rysowanie cienia robota
-    light_direction = rl.Vector3(-0.5, -1.0, -0.5)  # Kierunek światła
-
-    # # Rysowanie obiektu
-    # rl.begin_shader_mode(shadow_shader)
-    # robot.draw()  # lub ręczne rysowanie segmentów
-    # primitive.draw()  # lub ręczne rysowanie segmentów
-    # rl.end_shader_mode()
 
     rl.draw_grid(20, 0.5)
     rl.end_mode3d()
@@ -143,7 +126,7 @@ while not rl.window_should_close():
         mode=mode,
         joint_angles=degrees,
         end_effector_pos=robot.get_end_effector_pos(),
-        target_pos=gui.target,
+        target_pos=primitive.position,
         error_message=error_message
     )
     gui.draw_info()
