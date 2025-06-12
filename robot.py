@@ -116,16 +116,16 @@ class RobotArm:
 
         # Rysowanie segmentów ramienia (3 segmenty):
         rl.draw_cylinder_ex(base, joint1, 0.5, 0.5, 40, rl.GRAY)
-        rl.draw_cylinder_ex(joint1, joint2, 0.1, 0.1, 10, rl.GRAY)
-        rl.draw_cylinder_ex(joint2, joint3, 0.1, 0.1, 10, rl.GRAY)
+        rl.draw_cylinder_ex(joint1, joint2, 0.15, 0.15, 10, rl.GRAY)
+        rl.draw_cylinder_ex(joint2, joint3, 0.15, 0.15, 10, rl.GRAY)
         
         
 
         
         # Rysowanie stawów
-        rl.draw_sphere(joint1, 0.2, rl.DARKGRAY)
-        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
-        rl.draw_sphere(joint2, 0.2, rl.DARKGRAY)
+        rl.draw_sphere(joint1, 0.25, rl.DARKGRAY)
+        rl.draw_sphere(joint2, 0.25, rl.DARKGRAY)
+        #rl.draw_sphere(joint2, 0.4, rl.DARKGRAY)
 
         # Podstawa (np. cylinder od zera do bazy)
         rl.draw_cylinder_ex(rl.Vector3(0, 0, 0), base, 0.5, 0.5, 20, rl.DARKGRAY)

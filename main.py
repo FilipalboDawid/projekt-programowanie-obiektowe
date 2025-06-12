@@ -20,7 +20,7 @@ rl.set_target_fps(60)
 mode = 'free'
 error_message = ""
 
-light_dir = (1.0, -0.5, 0.0)  # Światło z prawej strony
+light_dir = (1.0, 0.0, 0.0)  # Światło z góry
 light_dir_ctypes = (ctypes.c_float * 3)(*light_dir)
 
 camera = Camera()
